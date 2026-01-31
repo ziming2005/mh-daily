@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
-
+import { FcLinux } from "react-icons/fc";
 import { HashRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { PiCloverDuotone } from "react-icons/pi";
 import { SiApachehadoop } from "react-icons/si";
@@ -50,6 +50,14 @@ interface TopNavigationProps {
   isLoggedIn: boolean;
   isLoading: boolean;
 }
+
+const NAV_ITEMS = [
+  { path: '/', icon: 'dashboard', label: 'Dashboard' },
+  { path: '/calendar', icon: 'view_week', label: 'Timetable' },
+  { path: '/tasks', icon: 'check_circle', label: 'Tasks' },
+  { path: '/full-calendar', icon: 'calendar_month', label: 'Calendar' },
+  { path: '/whiteboard', icon: 'draw', label: 'Whiteboard' },
+];
 
 const TopNavigation: React.FC<TopNavigationProps> = ({ toggleTheme, isDarkMode, session, isLoggedIn, isLoading }) => {
   const location = useLocation();
@@ -193,9 +201,9 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ toggleTheme, isDarkMode, 
   return (
     <nav className="h-20 flex items-center justify-between px-4 sm:px-6 bg-surface-light/80 dark:bg-surface-dark/80 backdrop-blur-md border-b border-border-light dark:border-border-dark shrink-0 z-50 relative">
       {/* Left: Brand */}
-      <div className="flex items-center gap-3 w-50 hidden sm:flex">
-        <div className="size-11 rounded-lg bg-primary/10 flex items-center justify-center text-slate-900 text-[34px]">
-          <SiApachehadoop />
+      <div className="flex items-center gap-4 w-50 hidden sm:flex">
+        <div className="size-11 rounded-lg bg-primary/10 flex items-center justify-center text-slate-900 text-[40px]">
+          <FcLinux />
         </div>
         <h1 className="flex items-center gap-2 text-3xl font-brand text-slate-900 dark:text-white leading-none tracking-tight">
           MH Daily
@@ -209,23 +217,13 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ toggleTheme, isDarkMode, 
         </div>
       </div>
 
-      {/* Center: Nav Icons */}
-      <div className="flex items-center gap-2 sm:gap-6 absolute left-1/2 -translate-x-1/2">
-        <NavLink to="/" className={({ isActive }) => navLinkClass(isActive)} title="Dashboard">
-          <span className={`material-symbols-outlined text-[24px] ${location.pathname === '/' ? 'filled' : ''}`}>dashboard</span>
-        </NavLink>
-        <NavLink to="/calendar" className={({ isActive }) => navLinkClass(isActive)} title="Timetable">
-          <span className={`material-symbols-outlined text-[24px] ${location.pathname === '/calendar' ? 'filled' : ''}`}>view_week</span>
-        </NavLink>
-        <NavLink to="/tasks" className={({ isActive }) => navLinkClass(isActive)} title="Tasks List">
-          <span className={`material-symbols-outlined text-[24px] ${location.pathname === '/tasks' ? 'filled' : ''}`}>check_circle</span>
-        </NavLink>
-        <NavLink to="/full-calendar" className={({ isActive }) => navLinkClass(isActive)} title="Calendar">
-          <span className={`material-symbols-outlined text-[24px] ${location.pathname === '/full-calendar' ? 'filled' : ''}`}>calendar_month</span>
-        </NavLink>
-        <NavLink to="/whiteboard" className={({ isActive }) => navLinkClass(isActive)} title="Whiteboard">
-          <span className={`material-symbols-outlined text-[24px] ${location.pathname === '/whiteboard' ? 'filled' : ''}`}>draw</span>
-        </NavLink>
+      {/* Center: Desktop Nav Icons */}
+      <div className="hidden sm:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
+        {NAV_ITEMS.map((item) => (
+          <NavLink key={item.path} to={item.path} className={({ isActive }) => navLinkClass(isActive)} title={item.label}>
+            <span className={`material-symbols-outlined text-[24px] ${location.pathname === item.path ? 'filled' : ''}`}>{item.icon}</span>
+          </NavLink>
+        ))}
       </div>
 
       {/* Right: User Profile & Theme */}
@@ -347,6 +345,27 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ toggleTheme, isDarkMode, 
         onLogin={handleAuthLogin}
         onSignup={handleAuthSignup}
       />
+
+      {/* Mobile Bottom Navigation */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#1E1E1E] border-t border-slate-200 dark:border-slate-800 flex justify-around items-center pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] px-2 z-50">
+        {NAV_ITEMS.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) => `
+              flex flex-col items-center justify-center w-full h-full gap-1
+              ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}
+            `}
+          >
+            <span className={`material-symbols-outlined text-[24px] transition-transform duration-200 ${location.pathname === item.path ? 'filled scale-110' : ''}`}>
+              {item.icon}
+            </span>
+            <span className="text-[10px] font-medium tracking-wide">
+              {item.label}
+            </span>
+          </NavLink>
+        ))}
+      </div>
     </nav>
   );
 };

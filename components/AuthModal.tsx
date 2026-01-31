@@ -90,35 +90,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, onSignu
     return ReactDOM.createPortal(
         <div className="fixed inset-0 z-[100002] flex items-center justify-center p-6 overflow-hidden">
             <style>{`
-                :root {
-                    --accent-primary: #6366f1;
-                    --accent-secondary: #4f46e5;
-                }
-                @font-face {
-                    font-family: 'Rocher';
-                    src: url(https://assets.codepen.io/9632/RocherColorGX.woff2);
-                }
-                @font-palette-values --Grays {
-                    font-family: Rocher;
-                    base-palette: 9;
-                }
-                @font-palette-values --Purples {
-                    font-family: Rocher;
-                    base-palette: 6;
-                }
-                @font-palette-values --Mint {
-                    font-family: Rocher;
-                    base-palette: 7;
-                }
-                .rocher-title {
-                    font-family: 'Rocher';
-                    font-palette: --Purples;
-                    font-variation-settings: "wght" 900;
-                    font-size: 34px;
-                }
-                .dark .rocher-title {
-                    font-palette: --Grays;
-                }
+
                 @keyframes float {
                     0% { transform: translateY(0px); }
                     50% { transform: translateY(-10px); }
@@ -257,7 +229,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, onSignu
             {/* Modal Card */}
             <div
                 className={`
-                    relative w-full max-w-[400px] modern-glass 
+                    relative w-full max-w-[420px] modern-glass 
                     rounded-[2rem] p-6 md:p-8
                     transform transition-all duration-700 cubic-bezier(0.23, 1, 0.32, 1)
                     ${isOpen && !isClosing ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-8'}
@@ -276,9 +248,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, onSignu
                     <div className="mt-5 mb-8 overflow-hidden">
                         <h2
                             key={mode}
-                            className="font-black uppercase tracking-tight rocher-title"
+                            className="text-3xl md:text-4xl font-brand uppercase tracking-wide py-1 text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-gray-600 to-gray-900 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.7)]"
                         >
-                            {mode === 'login' ? 'Member Login' : 'Create Account'}
+                            {mode === 'login' ? 'Member Login' : 'Register Now'}
                         </h2>
                     </div>
 

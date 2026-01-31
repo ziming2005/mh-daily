@@ -56,13 +56,17 @@ const AnalogClock = () => {
         return () => clearInterval(timer);
     }, []);
 
-    const hours = time.getHours();
-    const minutes = time.getMinutes();
-    const seconds = time.getSeconds();
+    const startRef = useRef(new Date());
 
-    const hourDeg = (hours % 12) * 30 + minutes * 0.5;
-    const minDeg = minutes * 6;
-    const secDeg = seconds * 6;
+    // Calculate difference in seconds from mount to ensure monotonic values
+    // We base everything on the initial render time to prevent large number precision issues
+    const startSeconds = startRef.current.getHours() * 3600 + startRef.current.getMinutes() * 60 + startRef.current.getSeconds();
+    const diffSeconds = Math.floor((time.getTime() - startRef.current.getTime()) / 1000);
+    const safeTotalSeconds = startSeconds + diffSeconds;
+
+    const secDeg = safeTotalSeconds * 6;
+    const minDeg = (safeTotalSeconds / 60) * 6;
+    const hourDeg = (safeTotalSeconds / 3600) * 30;
 
     return (
         <div className="relative flex items-center justify-center scale-75 sm:scale-100 py-0">
@@ -71,8 +75,8 @@ const AnalogClock = () => {
                     display: flex;
                     justify-content: center;
                     align-items: center;
-                    width: 250px;
-                    height: 250px;
+                    width: 240px;
+                    height: 240px;
                 }
 
                 .clock-face {
@@ -311,7 +315,7 @@ const InteractiveWidget = () => {
         <div className="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-2xl p-5 shadow-sm mb-2 flex flex-col items-center relative overflow-hidden shrink-0 transition-all">
 
             {/* Toggle Switch */}
-            <div className="absolute top-4 right-4 z-30 bg-slate-100 dark:bg-white/5 rounded-lg p-0.5 flex gap-0.5">
+            <div className="absolute top-3 right-4 z-30 bg-slate-100 dark:bg-white/5 rounded-lg p-0.5 flex gap-0.5">
                 <button
                     onClick={() => setActiveTab('clock')}
                     className={`p-1.5 rounded-md transition-all flex items-center justify-center ${activeTab === 'clock' ? 'bg-white dark:bg-slate-700 shadow-sm text-primary' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
@@ -328,7 +332,7 @@ const InteractiveWidget = () => {
                 </button>
             </div>
 
-            <div className="mt-2 min-h-[230px] flex items-center justify-center w-full">
+            <div className="mt-1 min-h-[230px] flex items-center justify-center w-full">
                 {activeTab === 'clock' ? (
                     <AnalogClock />
                 ) : (
