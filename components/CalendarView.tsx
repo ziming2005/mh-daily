@@ -331,12 +331,64 @@ const CalendarView: React.FC<CalendarViewProps> = ({ toggleTheme, isDarkMode, ta
             background: transparent;
           }
 
-          /* The active button pops up with your specific brand blue */
+            /* The active button pops up with your specific brand blue */
           .neu-toggle-group .neu-button.active {
             background-color: #3035cb !important;
             color: #ffffff !important;
             border-radius: 10px;
             box-shadow: 4px 4px 8px rgba(0,0,0,0.15) !important;
+          }
+
+          /* Custom Heart Checkbox */
+          .heart-container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+          }
+
+          .heart-container {
+            display: block;
+            position: relative;
+            cursor: pointer;
+            font-size: 14px;
+            user-select: none;
+            transition: 100ms;
+          }
+
+          .heart-checkmark {
+            top: 0;
+            left: 0;
+            height: 1.6em;
+            width: 1.6em;
+            transition: 100ms;
+            animation: dislike_effect 400ms ease;
+          }
+
+          .heart-container input:checked ~ .heart-checkmark path {
+            fill: #FF5353;
+            stroke-width: 0;
+          }
+
+          .heart-container input:checked ~ .heart-checkmark {
+            animation: like_effect 400ms ease;
+          }
+
+          .heart-container:hover {
+            transform: scale(1.1);
+          }
+
+          @keyframes like_effect {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+          }
+
+          @keyframes dislike_effect {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
           }
         `}</style>
 
@@ -410,25 +462,25 @@ const CalendarView: React.FC<CalendarViewProps> = ({ toggleTheme, isDarkMode, ta
                     </div>
 
                     {/* Mobile Navigation Icons */}
-                    <div className="flex md:hidden items-center gap-3">
-                        <button onClick={(e) => { e.stopPropagation(); handleToday(); }} className="flex items-center justify-center border-2 border-slate-600 dark:border-slate-500 rounded-md rounded-br-none w-7 h-7 hover:border-primary hover:text-primary transition-all">
-                            <span className="text-[14px] font-black leading-none text-slate-600 dark:text-slate-300">{new Date().getDate()}</span>
+                    <div className="flex md:hidden items-center gap-4">
+                        <button onClick={(e) => { e.stopPropagation(); handleToday(); }} className="flex items-center justify-center border-[3px] border-slate-500 dark:border-slate-500 rounded-md rounded-br-none w-[25px] h-[25px] hover:border-primary hover:text-primary transition-all">
+                            <span className="text-[14px] font-black leading-none text-slate-500 dark:text-slate-300">{new Date().getDate()}</span>
                         </button>
                         <button
                             onClick={(e) => { e.stopPropagation(); setViewMode(viewMode === 'month' ? 'day' : 'month'); }}
-                            className="flex items-center justify-center w-8 h-8 rounded-full text-slate-500 hover:text-primary transition-all"
+                            className="flex items-center justify-center w-7 h-7 rounded-full text-slate-500 hover:text-primary transition-all"
                         >
                             {viewMode === 'month' ? (
-                                <span className="text-[22px] flex items-center justify-center">
+                                <span className="text-[28px] flex items-center justify-center">
                                     <MdOutlineViewDay />
                                 </span>
                             ) : (
-                                <span className="text-[24px] flex items-center justify-center">
+                                <span className="text-[28px] flex items-center justify-center">
                                     <MdOutlineCalendarMonth />
                                 </span>
                             )}
                         </button>
-                        <button onClick={(e) => { e.stopPropagation(); handleAddNew(); }} className="flex items-center justify-center w-8 h-8 rounded-full text-slate-500 hover:text-primary transition-all active:scale-95">
+                        <button onClick={(e) => { e.stopPropagation(); handleAddNew(); }} className="flex items-center justify-center w-5 h-5 rounded-full text-slate-500 hover:text-primary transition-all active:scale-95">
                             <span className="material-symbols-outlined text-[30px]">add_circle</span>
                         </button>
                     </div>
@@ -468,7 +520,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ toggleTheme, isDarkMode, ta
                         <div key={day} className="py-2 md:py-3 text-center text-[11px] md:text-sm font-bold uppercase tracking-widest text-slate-800 dark:text-slate-400">{day}</div>
                     ))}
                 </div>
-                <div className="flex-1 overflow-y-auto min-h-0 relative">
+                <div className="flex-1 overflow-y-auto min-h-0 relative pb-[66px] md:pb-0">
                     <div className={`grid grid-cols-7 auto-rows-[minmax(120px,1fr)] min-h-full transition-all ${slideDirection === 'left' ? 'animate-slide-left' : slideDirection === 'right' ? 'animate-slide-right' : ''}`}>
                         {days.map((dayObj, index) => {
                             const isCurrentMonth = dayObj.type === 'current';
@@ -567,18 +619,22 @@ const CalendarView: React.FC<CalendarViewProps> = ({ toggleTheme, isDarkMode, ta
                     {/* Status Icon (Left) */}
                     <div className="flex-shrink-0">
                         {!isEvent ? (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (!isCompleted) fireConfetti(e.clientX, e.clientY);
-                                    onToggleTaskStatus(task.id);
-                                }}
-                                className={`flex items-center justify-center transition-all ${isCompleted ? 'text-inherit opacity-100' : 'text-inherit opacity-60 hover:opacity-100'}`}
-                            >
-                                <span className={`material-symbols-outlined text-[24px] ${isCompleted ? 'filled' : ''}`}>
-                                    {isCompleted ? 'check_circle' : 'radio_button_unchecked'}
-                                </span>
-                            </button>
+                            <label className="heart-container" onClick={(e) => e.stopPropagation()}>
+                                <input 
+                                    type="checkbox" 
+                                    checked={isCompleted} 
+                                    onChange={(e) => {
+                                        if (!isCompleted) fireConfetti(e.clientX, e.clientY);
+                                        onToggleTaskStatus(task.id);
+                                    }}
+                                />
+                                <div className="heart-checkmark">
+                                    <svg viewBox="0 0 256 256">
+                                        <rect fill="none" height="256" width="256"></rect>
+                                        <path d="M224.6,51.9a59.5,59.5,0,0,0-43-19.9,60.5,60.5,0,0,0-44,17.6L128,59.1l-7.5-7.4C97.2,28.3,59.2,26.3,35.9,47.4a59.9,59.9,0,0,0-2.3,87l83.1,83.1a15.9,15.9,0,0,0,22.6,0l81-81C243.7,113.2,245.6,75.2,224.6,51.9Z" strokeWidth="20px" stroke={isDarkMode ? "#94a3b8" : "#64748b"} fill="none"></path>
+                                    </svg>
+                                </div>
+                            </label>
                         ) : (
                             <div className="flex items-center justify-center">
                                 <span className="material-symbols-outlined text-[22px] flex-shrink-0 opacity-60">calendar_today</span>
@@ -657,7 +713,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ toggleTheme, isDarkMode, ta
                     {renderDayBlock(currentDate, dayTasks, false, 'mb-5')}
                 </div>
 
-                <div className="mb-8">
+                <div className="mb-14">
                     <button
                         onClick={handleAddNew}
                         className="w-full h-14 flex items-center justify-center gap-3 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-primary hover:border-primary hover:bg-slate-50 dark:hover:bg-white/5 transition-all group"

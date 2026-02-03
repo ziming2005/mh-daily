@@ -28,9 +28,15 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [selectedDateForNewTask, setSelectedDateForNewTask] = useState<Date | undefined>(undefined);
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-    const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
     const [numColumns, setNumColumns] = useState(5);
-    const [viewMode, setViewMode] = useState<'board' | 'carousel'>('carousel');
+    const [viewMode, setViewMode] = useState<'board' | 'carousel'>(() => {
+        const saved = localStorage.getItem('taskListViewMode');
+        return (saved === 'board' || saved === 'carousel') ? saved : 'carousel';
+    });
+
+    useEffect(() => {
+        localStorage.setItem('taskListViewMode', viewMode);
+    }, [viewMode]);
 
     // 3D Orbit Interaction State
     const [rotationAngle, setRotationAngle] = useState(0);
@@ -50,7 +56,7 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
         }
 
         const animate = () => {
-            setRotationAngle(prev => prev + 0.15);
+            setRotationAngle(prev => prev + 0.08);
             requestRef.current = requestAnimationFrame(animate);
         };
 
@@ -179,13 +185,28 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
         });
 
         const sortedDates = Array.from(datesToShow).sort();
+        const overdueDates = sortedDates.filter(d => d < todayStr);
+        const currentAndFutureDates = sortedDates.filter(d => d >= todayStr);
 
-        sortedDates.forEach(dateStr => {
+        // Group ALL overdue tasks into one "Overdue" group if there are tasks
+        const allOverdueTasks = filteredTasks.filter(t => t.date < todayStr && t.type !== 'event')
+            .sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''));
+
+        if (allOverdueTasks.length > 0) {
+            groups.push({
+                id: 'overdue-group',
+                label: 'Overdue',
+                dateStr: overdueDates[0], // Use safest past date
+                tasks: allOverdueTasks,
+                isOverdue: true,
+                index: indexCounter++
+            });
+        }
+
+        currentAndFutureDates.forEach(dateStr => {
             const dateTasks = filteredTasks.filter(t => t.date === dateStr).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 
             let label = '';
-            const isOverdue = dateStr < todayStr;
-
             if (dateStr === todayStr) label = 'Today';
             else if (dateStr === tomorrowStr) label = 'Tomorrow';
             else {
@@ -199,7 +220,7 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                 label,
                 dateStr,
                 tasks: dateTasks,
-                isOverdue,
+                isOverdue: false,
                 index: indexCounter++
             });
         });
@@ -332,36 +353,6 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
         setIsTaskModalOpen(false);
     };
 
-    // DnD Handlers
-    const handleDragStart = (e: React.DragEvent, taskId: string) => {
-        setDraggedTaskId(taskId);
-        e.dataTransfer.effectAllowed = 'move';
-        if (e.currentTarget instanceof HTMLElement) {
-            e.currentTarget.style.opacity = '0.5';
-        }
-    };
-
-    const handleDragEnd = (e: React.DragEvent) => {
-        if (e.currentTarget instanceof HTMLElement) {
-            e.currentTarget.style.opacity = '1';
-        }
-        setDraggedTaskId(null);
-    };
-
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-    };
-
-    const handleDateDrop = (e: React.DragEvent, dateStr: string) => {
-        e.preventDefault();
-        if (draggedTaskId) {
-            const task = tasks.find(t => t.id === draggedTaskId);
-            if (task && task.date !== dateStr) {
-                onEditTask({ ...task, date: dateStr });
-            }
-        }
-        setDraggedTaskId(null);
-    };
 
 
 
@@ -406,17 +397,17 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                 }
 
                 .carousel-inner {
-                    --w: 200px;
-                    --h: 250px;
+                    --w: 250px;
+                    --h: 300px;
                     --quantity: ${Math.min(boardGroups.length, 8)};
                     /* Dynamic radius based on quantity to prevent overlap */
-                    --translateZ: calc(max(400px, (var(--w) * var(--quantity)) / 6.28 + 100px));
+                    --translateZ: calc(max(400px, (var(--w) * var(--quantity)) / 6.28 + 120px));
                     --rotateX: -13deg;
                     --perspective: 1500px;
                     position: relative;
                     width: var(--w);
                     height: var(--h);
-                    top: -65px;
+                    top: -90px;
                     transform-style: preserve-3d;
                     transform: perspective(var(--perspective)) rotateX(var(--rotateX)) rotateY(${rotationAngle}deg);
                     transition: ${isDragging || isAutoRotating ? 'none' : 'transform 0.5s cubic-bezier(0.1, 0, 0.1, 1)'};
@@ -450,6 +441,7 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                 inset 0 0 20px rgba(var(--color-card), 0.1);
                     overflow: hidden;
                     position: relative;
+                    transform-style: preserve-3d;
                 }
 
                 .card-content .custom-scrollbar::-webkit-scrollbar {
@@ -460,13 +452,11 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                     scrollbar-width: none;
                     touch-action: pan-y;
                     pointer-events: auto;
+                    transform-style: preserve-3d;
                 }
 
                 .card-glow {
-                    position: absolute;
-                    inset: 0;
-                    background: radial-gradient(circle at 50% 0%, rgba(var(--color-card), 0.4) 0%, transparent 70%);
-                    pointer-events: none;
+                    display: none;
                 }
 
                 .card-footer {
@@ -576,18 +566,118 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                     box-shadow: 4px 4px 8px rgba(0,0,0,0.15) !important;
                 }
 
+                @media (max-width: 768px) {
+                    .carousel-inner {
+                        --w: 220px;
+                        --h: 270px;
+                        --rotateX: 0deg;
+                        --translateZ: calc(max(200px, (var(--w) * var(--quantity)) / 6.28 + 50px));
+                        --perspective: 1000px;
+                        top: -60px;
+                    }
+                    .neu-toolbar-card {
+                        padding: 4px;
+                        gap: 3px;
+                        border-radius: 14px;
+                    }
+                    .neu-button {
+                        padding: 8px 14px;
+                        border-radius: 10px;
+                        margin: 1px;
+                    }
+                    .neu-button .material-symbols-outlined {
+                        font-size: 19px;
+                    }
+                    .neu-toggle-group {
+                        margin: 0 4px;
+                        border-radius: 10px;
+                    }
+                }
+
+                /* Custom Heart Checkbox */
+                .heart-container input {
+                    position: absolute;
+                    opacity: 0;
+                    cursor: pointer;
+                    height: 0;
+                    width: 0;
+                }
+
+                .heart-container {
+                    display: block;
+                    position: relative;
+                    cursor: pointer;
+                    font-size: 13px;
+                    user-select: none;
+                    transition: 100ms;
+                    transform: translateZ(5px);
+                }
+
+                .carousel-card .heart-container {
+                    font-size: 10px;
+                }
+
+                .heart-expanded {
+                    font-size: 15px;
+                }
+
+                .heart-checkmark {
+                    position: relative;
+                    display: block;
+                    top: 0;
+                    left: 0;
+                    height: 1.6em;
+                    width: 1.6em;
+                    transition: 100ms;
+                    animation: dislike_effect 400ms ease;
+                }
+
+                .heart-container input:checked ~ .heart-checkmark path {
+                    fill: #FF5353;
+                    stroke-width: 0;
+                }
+
+                .heart-container input:checked ~ .heart-checkmark {
+                    animation: like_effect 400ms ease;
+                }
+
+                .heart-container:hover {
+                    transform: scale(1.1);
+                }
+
+                @keyframes like_effect {
+                    0% { transform: scale(0); }
+                    50% { transform: scale(1.2); }
+                    100% { transform: scale(1); }
+                }
+
+                @keyframes dislike_effect {
+                    0% { transform: scale(0); }
+                    50% { transform: scale(1.2); }
+                    100% { transform: scale(1); }
+                }
+
+                /* Hide scrollbar for Chrome, Safari and Opera */
+                .no-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+                /* Hide scrollbar for IE, Edge and Firefox */
+                .no-scrollbar {
+                    -ms-overflow-style: none;  /* IE and Edge */
+                    scrollbar-width: none;  /* Firefox */
+                }
             `}</style>
 
-            <div className="flex-1 flex flex-col relative overflow-hidden bg-slate-50/50 dark:bg-slate-900/50">
+            <div className="flex-1 flex flex-col relative overflow-y-auto sm:overflow-hidden no-scrollbar bg-slate-50/50 dark:bg-slate-900/50">
 
-                <div className="px-6 py-5 flex flex-col sm:flex-row items-center justify-end z-20">
+                <div className="px-4 py-3 sm:py-5 flex flex-col items-end sm:flex-row sm:items-center justify-end z-20">
                     <div className="neu-toolbar-card">
                         <button
                             onClick={handleAddNew}
                             className="neu-button Post"
                         >
                             <span className="material-symbols-outlined">add_circle</span>
-                            <span>Task</span>
+                            <span className="hidden sm:inline">Task</span>
                         </button>
 
                         <div className="neu-toggle-group">
@@ -596,7 +686,7 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                 className={`neu-button Explore ${viewMode === 'carousel' ? 'active' : ''}`}
                             >
                                 <span className="material-symbols-outlined">deployed_code</span>
-                                <span>Orbit</span>
+                                <span className="hidden sm:inline">Orbit</span>
                             </button>
 
                             <button
@@ -604,7 +694,7 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                 className={`neu-button Explore ${viewMode === 'board' ? 'active' : ''}`}
                             >
                                 <span className="material-symbols-outlined">dashboard</span>
-                                <span>Board</span>
+                                <span className="hidden sm:inline">Board</span>
                             </button>
                         </div>
 
@@ -614,7 +704,7 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                 className={`neu-button Chat ${isFilterOpen || activeFilterCount > 0 ? 'active' : ''}`}
                             >
                                 <span className="material-symbols-outlined">filter_list</span>
-                                Filter
+                                <span className="hidden sm:inline">Filter</span>
                                 {activeFilterCount > 0 && (
                                     <span className="ml-1 opacity-70">({activeFilterCount})</span>
                                 )}
@@ -678,7 +768,7 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                         >
                             {boardGroups.length > 0 ? (
                                 <div className="carousel-inner">
-                                    {boardGroups.slice(0, 10).map((group, index) => {
+                                    {boardGroups.slice(0, 8).map((group, index) => {
                                         const rgb = group.isOverdue ? '254, 226, 226' : dayColorRGB[group.index % dayColorRGB.length];
                                         const dayClasses = group.isOverdue
                                             ? 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/20'
@@ -693,11 +783,17 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                                 onMouseLeave={() => setIsHovered(false)}
                                                 onClick={() => handleCardClick(group)}
                                             >
-                                                <div className={`card-content ${dayClasses}`}>
+                                                <div
+                                                    className={`card-content ${dayClasses}`}
+                                                    onMouseDown={() => {
+                                                        // Ensure click timing is recorded even if scrolling stops propagation
+                                                        if (!isDragging) clickStartTime.current = Date.now();
+                                                    }}
+                                                >
                                                     <div className="card-glow"></div>
 
-                                                    <div className="flex justify-between items-center mb-2">
-                                                        <h3 className={`text-[15px] font-bold tracking-tight ${group.isOverdue ? 'text-red-600' : 'text-slate-900 dark:text-white'}`}>
+                                                    <div className="flex justify-between items-center mb-3">
+                                                        <h3 className={`text-[16px] font-bold ${group.isOverdue ? 'text-red-600' : 'text-slate-900 dark:text-white'}`}>
                                                             {group.label}
                                                         </h3>
                                                         <div className="flex items-center gap-1.5 px-2 py-1 bg-white/50 dark:bg-black/20 rounded-full border border-white/20">
@@ -709,13 +805,39 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                                         className="flex-1 overflow-y-auto custom-scrollbar space-y-2"
                                                         style={{ transform: 'translateZ(1px)' }}
                                                         onWheel={(e) => e.stopPropagation()}
-                                                        onMouseDown={(e) => e.stopPropagation()}
-                                                        onPointerDown={(e) => e.stopPropagation()}
-                                                        onTouchStart={(e) => e.stopPropagation()}
-                                                        onTouchMove={(e) => e.stopPropagation()}
+                                                        onMouseDown={(e) => {
+                                                            const target = e.target as HTMLElement;
+                                                            if (target.closest('button, input, label, .heart-container')) {
+                                                                return; // Let interactive elements handle their own clicks
+                                                            }
+                                                            clickStartTime.current = Date.now();
+                                                            e.stopPropagation();
+                                                        }}
+                                                        onPointerDown={(e) => {
+                                                            const target = e.target as HTMLElement;
+                                                            if (target.closest('button, input, label, .heart-container')) {
+                                                                return;
+                                                            }
+                                                            e.stopPropagation();
+                                                        }}
+                                                        onTouchStart={(e) => {
+                                                            const target = e.target as HTMLElement;
+                                                            if (target.closest('button, input, label, .heart-container')) {
+                                                                return;
+                                                            }
+                                                            clickStartTime.current = Date.now();
+                                                            e.stopPropagation();
+                                                        }}
+                                                        onTouchMove={(e) => {
+                                                            const target = e.target as HTMLElement;
+                                                            if (target.closest('button, input, label, .heart-container')) {
+                                                                return;
+                                                            }
+                                                            e.stopPropagation();
+                                                        }}
                                                     >
                                                         {group.tasks.length === 0 ? (
-                                                            <div className="py-10 text-center font-medium text-slate-500 dark:text-slate-500 text-sm italic">
+                                                            <div className="py-16 text-center font-medium text-slate-500 dark:text-slate-500 text-sm italic">
                                                                 No tasks
                                                             </div>
                                                         ) : (
@@ -726,26 +848,36 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                                                 return (
                                                                     <div
                                                                         key={task.id}
-                                                                        className={`flex items-start gap-2 p-2 rounded-xl transition-all ${isCompleted ? 'opacity-40' : 'bg-white/40 dark:bg-black/20 hover:bg-white/60 dark:hover:bg-black/40'}`}
-                                                                        onClick={() => setFocusedGroupId(group.id)}
+                                                                        className={`flex items-center gap-4 p-2 pl-3 rounded-xl transition-all ${isCompleted ? 'opacity-40' : 'bg-white/40 dark:bg-black/20 hover:bg-white/60 dark:hover:bg-black/40'}`}
                                                                     >
                                                                         {!isEvent ? (
-                                                                            <button
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    if (!isCompleted) fireConfetti(e.clientX, e.clientY);
-                                                                                    onToggleTaskStatus(task.id);
-                                                                                }}
-                                                                                className={`mt-0.5 shrink-0 w-3.5 h-3.5 rounded-full border-2 transition-all flex items-center justify-center ${isCompleted ? 'bg-primary border-primary text-white' : 'border-slate-300 dark:border-slate-600 text-transparent hover:border-primary'}`}
+                                                                            <label
+                                                                                className="heart-container"
+                                                                                onClick={(e) => e.stopPropagation()}
+                                                                                onMouseDown={(e) => e.stopPropagation()}
+                                                                                onTouchStart={(e) => e.stopPropagation()}
                                                                             >
-                                                                                <span className="material-symbols-outlined text-[14px]">check</span>
-                                                                            </button>
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={isCompleted}
+                                                                                    onChange={(e) => {
+                                                                                        if (!isCompleted) fireConfetti(e.clientX, e.clientY);
+                                                                                        onToggleTaskStatus(task.id);
+                                                                                    }}
+                                                                                />
+                                                                                <div className="heart-checkmark">
+                                                                                    <svg viewBox="0 0 256 256">
+                                                                                        <rect fill="none" height="256" width="256"></rect>
+                                                                                        <path d="M224.6,51.9a59.5,59.5,0,0,0-43-19.9,60.5,60.5,0,0,0-44,17.6L128,59.1l-7.5-7.4C97.2,28.3,59.2,26.3,35.9,47.4a59.9,59.9,0,0,0-2.3,87l83.1,83.1a15.9,15.9,0,0,0,22.6,0l81-81C243.7,113.2,245.6,75.2,224.6,51.9Z" strokeWidth="20px" stroke={isDarkMode ? "#94a3b8" : "#64748b"} fill="none"></path>
+                                                                                    </svg>
+                                                                                </div>
+                                                                            </label>
                                                                         ) : (
-                                                                            <span className="material-symbols-outlined text-[20px] text-slate-400 shrink-0">event</span>
+                                                                            <span className="material-symbols-outlined text-[16px] text-slate-500 shrink-0">event</span>
                                                                         )}
                                                                         <div className="flex-1 min-w-0">
-                                                                            <div className="flex items-center gap-1.5 mb-0.5">
-                                                                                <p className={`text-sm font-bold leading-tight truncate ${isCompleted ? 'line-through text-slate-500' : 'text-slate-800 dark:text-white'}`}>
+                                                                            <div className="flex items-center gap-1.5">
+                                                                                <p className={`text-[12px] font-medium truncate ${isCompleted ? 'line-through text-slate-500' : 'text-slate-800 dark:text-white'}`}>
                                                                                     {task.title}
                                                                                 </p>
                                                                                 {task.urgency !== 'Normal' && (
@@ -755,7 +887,10 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                                                                 )}
                                                                             </div>
                                                                             {task.time && (
-                                                                                <span className="text-[10px] font-bold text-slate-500 uppercase">{task.time.slice(0, 5)}</span>
+                                                                                <div className="flex items-center gap-1 mt-0.5">
+                                                                                    <span className="material-symbols-outlined text-[12px] text-slate-500 !leading-none">schedule</span>
+                                                                                    <span className="text-[10px] font-bold text-slate-500 uppercase leading-none">{task.time.slice(0, 5)}</span>
+                                                                                </div>
                                                                             )}
                                                                         </div>
                                                                     </div>
@@ -780,7 +915,7 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                             )}
                         </div>
                     ) : (
-                        <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-4">
+                        <div className="flex-1 sm:overflow-y-auto overflow-visible custom-scrollbar px-6 py-4 sm: py-2 sm: pb-14">
                             <div className="flex gap-6 pb-10 items-start">
                                 {distributedGroups.map((colGroups, colIndex) => (
                                     <div key={colIndex} className="flex-1 flex flex-col gap-6 min-w-0">
@@ -792,16 +927,14 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                             return (
                                                 <div
                                                     key={group.id}
-                                                    onDragOver={handleDragOver}
-                                                    onDrop={(e) => handleDateDrop(e, group.dateStr)}
                                                     className={`w-full h-fit rounded-[2rem] p-5 border ${colStyle} transition-all shadow-sm flex flex-col`}
                                                 >
                                                     <h3 className={`text-xl font-bold mb-4 px-2 ${group.isOverdue ? 'text-red-600 dark:text-red-400' : 'text-slate-700 dark:text-slate-100'}`}>
                                                         {group.label}
                                                     </h3>
 
-                                                    <div className={`space-y-3 ${draggedTaskId ? 'min-h-[100px] bg-black/5 dark:bg-white/5 rounded-xl transition-all' : ''}`}>
-                                                        {group.tasks.length === 0 && !draggedTaskId && (
+                                                    <div className="space-y-3">
+                                                        {group.tasks.length === 0 && (
                                                             <div className="py-8 text-center text-slate-400 dark:text-slate-500 text-sm italic">
                                                                 No tasks
                                                             </div>
@@ -813,30 +946,32 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                                             return (
                                                                 <div
                                                                     key={task.id}
-                                                                    draggable="true"
-                                                                    onDragStart={(e) => handleDragStart(e, task.id)}
-                                                                    onDragEnd={handleDragEnd}
-                                                                    className={`group flex items-center gap-4 cursor-grab active:cursor-grabbing hover:bg-white/40 dark:hover:bg-black/20 p-2 rounded-lg transition-colors ${isCompleted ? 'opacity-50' : ''}`}
+                                                                    className={`group flex items-center gap-4 cursor-pointer hover:bg-white/40 dark:hover:bg-black/20 p-2 rounded-lg transition-colors ${isCompleted ? 'opacity-50' : ''}`}
+                                                                    onClick={() => handleEdit(task)}
                                                                 >
                                                                     {!isEvent ? (
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                if (!isCompleted) fireConfetti(e.clientX, e.clientY);
-                                                                                onToggleTaskStatus(task.id);
-                                                                            }}
-                                                                            className={`text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors`}
-                                                                        >
-                                                                            <span className={`material-symbols-outlined text-[22px] ${isCompleted ? 'filled text-primary' : ''}`}>
-                                                                                {isCompleted ? 'check_box' : 'check_box_outline_blank'}
-                                                                            </span>
-                                                                        </button>
+                                                                        <label className="heart-container" onClick={(e) => e.stopPropagation()}>
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={isCompleted}
+                                                                                onChange={(e) => {
+                                                                                    if (!isCompleted) fireConfetti(e.clientX, e.clientY);
+                                                                                    onToggleTaskStatus(task.id);
+                                                                                }}
+                                                                            />
+                                                                            <div className="heart-checkmark">
+                                                                                <svg viewBox="0 0 256 256">
+                                                                                    <rect fill="none" height="256" width="256"></rect>
+                                                                                    <path d="M224.6,51.9a59.5,59.5,0,0,0-43-19.9,60.5,60.5,0,0,0-44,17.6L128,59.1l-7.5-7.4C97.2,28.3,59.2,26.3,35.9,47.4a59.9,59.9,0,0,0-2.3,87l83.1,83.1a15.9,15.9,0,0,0,22.6,0l81-81C243.7,113.2,245.6,75.2,224.6,51.9Z" strokeWidth="20px" stroke={isDarkMode ? "#94a3b8" : "#64748b"} fill="none"></path>
+                                                                                </svg>
+                                                                            </div>
+                                                                        </label>
                                                                     ) : (
-                                                                        <span className={`material-symbols-outlined text-[22px] text-slate-400`}>event</span>
+                                                                        <span className={`material-symbols-outlined text-[22px] text-slate-500`}>event</span>
                                                                     )}
-                                                                    <div className="flex-1 min-w-0" onClick={() => handleEdit(task)}>
+                                                                    <div className="flex-1 min-w-0">
                                                                         <div className="flex items-center gap-2">
-                                                                            <p className={`text-base font-medium text-slate-900 dark:text-white leading-snug tracking-tight truncate ${isCompleted ? 'line-through' : ''}`}>
+                                                                            <p className={`text-base font-semibold text-slate-800 dark:text-white leading-snug tracking-tight truncate ${isCompleted ? 'line-through' : ''}`}>
                                                                                 {task.title}
                                                                             </p>
                                                                             {task.urgency !== 'Normal' && (
@@ -846,8 +981,9 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                                                             )}
                                                                         </div>
                                                                         {task.time && (
-                                                                            <div className="mt-0.5">
-                                                                                <span className="text-sm font-medium text-slate-500 dark:text-slate-400 tabular-nums tracking-tight">{task.time?.slice(0, 5)}</span>
+                                                                            <div className="mt-1.5 flex items-center gap-1.5">
+                                                                                <span className="material-symbols-outlined text-[16px] text-slate-600">schedule</span>
+                                                                                <span className="text-sm font-semibold text-slate-600 dark:text-slate-500 tabular-nums tracking-tight">{task.time?.slice(0, 5)}</span>
                                                                             </div>
                                                                         )}
                                                                     </div>
@@ -923,27 +1059,38 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                         return (
                                             <div
                                                 key={task.id}
-                                                className={`group px-5 py-4 rounded-2xl transition-all ${isCompleted ? 'opacity-50' : 'bg-white/40 dark:bg-black/30 hover:bg-white/60 dark:hover:bg-black/50 shadow-sm'}`}
+                                                className={`group px-4 py-3 cursor-pointer rounded-2xl transition-all ${isCompleted ? 'opacity-50' : 'bg-white/40 dark:bg-black/30 hover:bg-white/60 dark:hover:bg-black/50 shadow-sm'}`}
                                                 onClick={() => handleEdit(task)}
                                             >
-                                                <div className="flex items-start gap-4">
+                                                <div className="flex items-center gap-4">
                                                     {!isEvent ? (
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                if (!isCompleted) fireConfetti(e.clientX, e.clientY);
-                                                                onToggleTaskStatus(task.id);
-                                                            }}
-                                                            className={`mt-1 shrink-0 w-5 h-5 rounded-full border-2 transition-all flex items-center justify-center ${isCompleted ? 'bg-primary border-primary text-white' : 'border-slate-400 dark:border-slate-500 text-transparent hover:border-primary'}`}
+                                                        <label
+                                                            className="heart-container heart-expanded"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            onMouseDown={(e) => e.stopPropagation()}
+                                                            onTouchStart={(e) => e.stopPropagation()}
                                                         >
-                                                            <span className="material-symbols-outlined text-[16px]">check</span>
-                                                        </button>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isCompleted}
+                                                                onChange={(e) => {
+                                                                    if (!isCompleted) fireConfetti(e.clientX, e.clientY);
+                                                                    onToggleTaskStatus(task.id);
+                                                                }}
+                                                            />
+                                                            <div className="heart-checkmark">
+                                                                <svg viewBox="0 0 256 256">
+                                                                    <rect fill="none" height="256" width="256"></rect>
+                                                                    <path d="M224.6,51.9a59.5,59.5,0,0,0-43-19.9,60.5,60.5,0,0,0-44,17.6L128,59.1l-7.5-7.4C97.2,28.3,59.2,26.3,35.9,47.4a59.9,59.9,0,0,0-2.3,87l83.1,83.1a15.9,15.9,0,0,0,22.6,0l81-81C243.7,113.2,245.6,75.2,224.6,51.9Z" strokeWidth="20px" stroke={isDarkMode ? "#94a3b8" : "#64748b"} fill="none"></path>
+                                                                </svg>
+                                                            </div>
+                                                        </label>
                                                     ) : (
                                                         <span className="material-symbols-outlined mt-1 text-[23px] text-slate-500 shrink-0">event</span>
                                                     )}
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center justify-between gap-4">
-                                                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                            <div className="flex items-center gap-2 min-w-0 flex-1">
                                                                 <p className={`text-[17px] font-medium truncate ${isCompleted ? 'line-through' : 'text-slate-900 dark:text-white'}`}>
                                                                     {task.title}
                                                                 </p>
@@ -954,7 +1101,8 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                                                 )}
                                                             </div>
                                                             {task.time && (
-                                                                <span className="text-sm font-black text-primary bg-primary/10 px-3 py-1 rounded-full uppercase tabular-nums shrink-0">
+                                                                <span className="text-sm font-bold text-primary bg-primary/10 px-3 py-1 rounded-full uppercase tabular-nums shrink-0 flex items-center gap-1.5">
+                                                                    <span className="material-symbols-outlined text-[16px] text-primary-600">schedule</span>
                                                                     {task.time.slice(0, 5)}
                                                                 </span>
                                                             )}

@@ -258,7 +258,7 @@ const NewBlockModal: React.FC<NewBlockModalProps> = ({ isOpen, onClose, onSave, 
         <div className="px-8 py-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-[#1a1a1a]">
           <button
             onClick={handleSave}
-            className="w-full py-4 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold text-base shadow-xl shadow-primary/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-3 group"
+            className="w-full py-3 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold text-base shadow-xl shadow-primary/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-3 group"
           >
             {initialData ? 'Update Block' : 'Create Block'}
           </button>

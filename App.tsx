@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from './lib/supabase';
 import { FcLinux } from "react-icons/fc";
 import { HashRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
@@ -47,6 +48,9 @@ interface TopNavigationProps {
   toggleTheme: () => void;
   isDarkMode: boolean;
   session: any;
+  deferredPrompt: any;
+  isInstallable: boolean;
+  handleInstallClick: () => void;
   isLoggedIn: boolean;
   isLoading: boolean;
 }
@@ -59,7 +63,7 @@ const NAV_ITEMS = [
   { path: '/whiteboard', icon: 'draw', label: 'Whiteboard' },
 ];
 
-const TopNavigation: React.FC<TopNavigationProps> = ({ toggleTheme, isDarkMode, session, isLoggedIn, isLoading }) => {
+const TopNavigation: React.FC<TopNavigationProps> = ({ toggleTheme, isDarkMode, session, deferredPrompt, isInstallable, handleInstallClick, isLoggedIn, isLoading }) => {
   const location = useLocation();
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
   const profileRef = React.useRef<HTMLDivElement>(null);
@@ -212,8 +216,8 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ toggleTheme, isDarkMode, 
       </div>
       {/* Mobile Brand Icon Only */}
       <div className="flex items-center sm:hidden">
-        <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-[24px]">
-          <SiApachehadoop />
+        <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-slate-900 text-[36px]">
+          <FcLinux />
         </div>
       </div>
 
@@ -307,6 +311,19 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ toggleTheme, isDarkMode, 
                   </div>
                 </div>
 
+                {/* Install PWA Button */}
+                {isInstallable && (
+                  <div className="px-2 pb-2">
+                    <button
+                      onClick={handleInstallClick}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors group"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">install_mobile</span>
+                      <span className="text-sm font-bold">Add to Home Screen</span>
+                    </button>
+                  </div>
+                )}
+
                 {/* Logout Button */}
                 <div className="p-2">
                   <button
@@ -346,26 +363,29 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ toggleTheme, isDarkMode, 
         onSignup={handleAuthSignup}
       />
 
-      {/* Mobile Bottom Navigation */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#1E1E1E] border-t border-slate-200 dark:border-slate-800 flex justify-around items-center pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] px-2 z-50">
-        {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) => `
-              flex flex-col items-center justify-center w-full h-full gap-1
-              ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}
-            `}
-          >
-            <span className={`material-symbols-outlined text-[24px] transition-transform duration-200 ${location.pathname === item.path ? 'filled scale-110' : ''}`}>
-              {item.icon}
-            </span>
-            <span className="text-[10px] font-medium tracking-wide">
-              {item.label}
-            </span>
-          </NavLink>
-        ))}
-      </div>
+      {/* Mobile Bottom Navigation - Portal to escape parent stacking context */}
+      {createPortal(
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#1E1E1E] border-t border-slate-200 dark:border-slate-800 flex justify-around items-center pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] px-2 z-[100]">
+          {NAV_ITEMS.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) => `
+                flex flex-col items-center justify-center w-full h-full gap-1
+                ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}
+              `}
+            >
+              <span className={`material-symbols-outlined text-[24px] transition-transform duration-200 ${location.pathname === item.path ? 'filled scale-110' : ''}`}>
+                {item.icon}
+              </span>
+              <span className="text-[10px] font-medium tracking-wide">
+                {item.label}
+              </span>
+            </NavLink>
+          ))}
+        </div>,
+        document.body
+      )}
     </nav>
   );
 };
@@ -373,8 +393,8 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ toggleTheme, isDarkMode, 
 const INITIAL_BLOCKS: BlockData[] = [];
 
 const INITIAL_NOTES: WhiteboardNote[] = [
-  { id: '1', type: 'sticky', x: 200, y: 200, width: 280, height: 280, content: 'Now you see me! 👀\n\nClick me to reveal the toolbar above.\n\nTry dragging the corners to resize me, or the top handle to rotate!', title: 'Welcome', color: 'yellow', rotation: -2, zIndex: 1, fontSize: 16, createdAt: Date.now() },
-  { id: '2', type: 'sticky', x: 800, y: 400, width: 300, height: 240, content: 'Click the canvas background to hide the toolbar again.', title: 'Tip', color: 'blue', rotation: 1, zIndex: 2, fontSize: 18, createdAt: Date.now() },
+  { id: '11111111-1111-1111-1111-111111111111', type: 'sticky', x: 200, y: 200, width: 280, height: 280, content: 'Now you see me! 👀\n\nClick me to reveal the toolbar above.\n\nTry dragging the corners to resize me, or the top handle to rotate!', title: 'Welcome', color: 'yellow', rotation: -2, zIndex: 1, fontSize: 16, createdAt: Date.now() },
+  { id: '22222222-2222-2222-2222-222222222222', type: 'sticky', x: 800, y: 400, width: 300, height: 240, content: 'Click the canvas background to hide the toolbar again.', title: 'Tip', color: 'blue', rotation: 1, zIndex: 2, fontSize: 18, createdAt: Date.now() },
 ];
 
 export default function App() {
@@ -386,22 +406,53 @@ export default function App() {
   const [session, setSession] = useState<any>(null);
   const isLoggedIn = !!session;
 
+  // PWA Install State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  // Capture the install prompt event
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+      setIsInstallable(false);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    // Check if app is already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstallable(false);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
   useEffect(() => {
     // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) {
-        fetchUserData();
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      setSession(initialSession);
+      if (initialSession) {
+        fetchUserData(initialSession);
       } else {
         setIsLoading(false);
       }
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) {
-        fetchUserData();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      if (newSession) {
+        fetchUserData(newSession);
       } else {
         setBlocks([]);
         setNotes([]);
@@ -413,13 +464,21 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUserData = async () => {
+  const fetchUserData = async (currentSession?: any) => {
+    const activeSession = currentSession || session;
+    if (!activeSession?.user?.id) {
+      console.log('No active session found, skipping fetch.');
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
+      const userId = activeSession.user.id;
       const [tasksRes, blocksRes, notesRes] = await Promise.all([
-        supabase.from('tasks').select('*'),
-        supabase.from('time_blocks').select('*'),
-        supabase.from('whiteboard_notes').select('*'),
+        supabase.from('tasks').select('*').eq('user_id', userId),
+        supabase.from('time_blocks').select('*').eq('user_id', userId),
+        supabase.from('whiteboard_notes').select('*').eq('user_id', userId),
       ]);
 
       console.log('Supabase Fetch Results:', {
@@ -546,6 +605,9 @@ export default function App() {
         await supabase.from('time_blocks').delete().in('id', deletedIds);
       }
 
+      const userId = session?.user?.id;
+      if (typeof userId !== 'string') return;
+
       // 2. Upsert current blocks
       if (newBlocks.length > 0) {
         const { error } = await supabase.from('time_blocks').upsert(newBlocks.map(b => ({
@@ -556,7 +618,7 @@ export default function App() {
           start_time: b.startTime,
           end_time: b.endTime,
           days: b.days,
-          user_id: session.user.id
+          user_id: userId
         })));
         if (error) throw error;
       }
@@ -574,10 +636,16 @@ export default function App() {
     const syncNotes = async () => {
       try {
         // Fetch current IDs from DB to handle deletions
+        const userId = session?.user?.id;
+        if (typeof userId !== 'string') {
+          console.error('Invalid user ID type:', typeof userId, userId);
+          return;
+        }
+
         const { data: dbNotes } = await supabase
           .from('whiteboard_notes')
           .select('id')
-          .eq('user_id', session.user.id);
+          .eq('user_id', userId);
 
         if (dbNotes) {
           const dbIds = dbNotes.map(n => n.id);
@@ -598,24 +666,45 @@ export default function App() {
             width: n.width,
             height: n.height,
             content: n.content,
-            image_url: n.imageUrl,
-            title: n.title,
+            image_url: n.imageUrl || null,
+            title: n.title || null,
             color: n.color,
             rotation: n.rotation,
             z_index: n.zIndex,
             font_size: n.fontSize,
-            user_id: session.user.id
+            user_id: userId
           })));
           if (error) throw error;
         }
-      } catch (error) {
-        console.error('Error syncing notes:', error);
+      } catch (error: any) {
+        console.error('Error syncing notes full object:', error);
+        console.error('Notes being synced:', notes);
+        if (error.message) console.error('Error message:', error.message);
+        if (error.details) console.error('Error details:', error.details);
+        if (error.hint) console.error('Error hint:', error.hint);
       }
     };
 
     const timer = setTimeout(syncNotes, 2000);
     return () => clearTimeout(timer);
   }, [notes, session]);
+
+  // Handle PWA Install
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+
+    if (outcome === 'accepted') {
+      console.log('User accepted the install prompt');
+    } else {
+      console.log('User dismissed the install prompt');
+    }
+
+    setDeferredPrompt(null);
+    setIsInstallable(false);
+  };
 
 
   return (
@@ -643,6 +732,9 @@ export default function App() {
           session={session}
           isLoggedIn={isLoggedIn}
           isLoading={isLoading}
+          deferredPrompt={deferredPrompt}
+          isInstallable={isInstallable}
+          handleInstallClick={handleInstallClick}
         />
 
         {/* Main Content Area */}

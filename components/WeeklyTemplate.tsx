@@ -35,6 +35,7 @@ const WeeklyTemplate: React.FC<WeeklyTemplateProps> = ({ toggleTheme, isDarkMode
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const selectedDay = days[selectedDayIndex];
+  const [isDayMenuOpen, setIsDayMenuOpen] = useState(false);
 
   // Helper to convert time string to minutes
   const timeToMins = (t: string) => {
@@ -451,15 +452,42 @@ const WeeklyTemplate: React.FC<WeeklyTemplateProps> = ({ toggleTheme, isDarkMode
             color: #e4e4e4;
             box-shadow: none;
           }
+
+          @media (max-width: 768px) {
+            .neu-toolbar-card {
+              padding: 4px;
+              gap: 3px;
+              border-radius: 14px;
+            }
+            .neu-button {
+              padding: 8px 14px;
+              border-radius: 10px;
+              margin: 1px;
+            }
+            .neu-button .material-symbols-outlined {
+              font-size: 19px;
+            }
+          }
         `}</style>
-        <div className="w-full px-4 md:px-6 py-4 flex items-center justify-end z-30">
+        <div className="w-full px-4 md:px-6 py-3 md:py-4 flex items-center justify-between md:justify-end z-30">
+          {/* Mobile Day Selector Toggle */}
+          <button
+            onClick={() => setIsDayMenuOpen(!isDayMenuOpen)}
+            className="md:hidden flex items-center gap-1 text-slate-900 dark:text-white transition-opacity hover:opacity-80"
+          >
+            <span className="text-2xl font-bold tracking-tight">
+              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][selectedDayIndex]}
+            </span>
+            <span className={`material-symbols-outlined text-[24px] text-slate-400 transition-transform duration-200 ${isDayMenuOpen ? 'rotate-180' : ''}`}>expand_more</span>
+          </button>
+
           <div className="neu-toolbar-card">
             <button
               onClick={handleCreateNewBlock}
               className="neu-button Post"
             >
               <span className="material-symbols-outlined">add_circle</span>
-              <span>Block</span>
+              <span className="hidden sm:inline">Block</span>
             </button>
 
             <button
@@ -473,23 +501,27 @@ const WeeklyTemplate: React.FC<WeeklyTemplateProps> = ({ toggleTheme, isDarkMode
           </div>
         </div>
 
+        {/* Mobile Day Selector (Fixed) */}
+        {isDayMenuOpen && (
+          <div className="grid grid-cols-7 md:hidden gap-1 mb-3 px-2 z-20 animate-in slide-in-from-top-2 fade-in duration-200">
+            {days.map((day, idx) => (
+              <button
+                key={day}
+                onClick={() => setSelectedDayIndex(idx)}
+                className={`w-full h-[32px] flex items-center justify-center rounded-full text-[13px] sm:text-xs font-bold border transition-all p-0 ${selectedDayIndex === idx
+                  ? 'bg-primary/10 text-primary border-primary/20'
+                  : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
+                  }`}
+              >
+                {day}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="flex-1 overflow-auto relative z-10 custom-scrollbar-hide">
-          <div className="w-full md:min-w-[1000px] px-0 md:px-6 pb-10">
-            {/* Mobile Day Selector */}
-            <div className="flex md:hidden bg-white/40 dark:bg-slate-800/40 backdrop-blur-md rounded-none md:rounded-xl mb-4 p-1 shadow-sm border-y md:border border-border-light dark:border-border-dark overflow-x-auto no-scrollbar">
-              {days.map((day, idx) => (
-                <button
-                  key={day}
-                  onClick={() => setSelectedDayIndex(idx)}
-                  className={`flex-1 min-w-[60px] py-2 rounded-lg text-xs font-bold transition-all ${selectedDayIndex === idx
-                    ? 'bg-primary text-white shadow-md'
-                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-                    }`}
-                >
-                  {day}
-                </button>
-              ))}
-            </div>
+          <div className="w-full md:min-w-[1000px] px-0 md:px-6 pb-24 md:pb-10">
+
 
             <div className="grid grid-cols-[60px_1fr] md:grid-cols-[80px_repeat(7,1fr)] border border-border-light dark:border-border-dark bg-white dark:bg-surface-dark sticky top-0 z-40 backdrop-blur-md rounded-t-xl overflow-hidden shadow-sm">
               <div className="p-2 md:p-4 text-[10px] md:text-xs font-semibold text-slate-400 uppercase tracking-wider text-center border-r border-border-light dark:border-border-dark flex items-center justify-center bg-slate-50 dark:bg-surface-dark/40">

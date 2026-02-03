@@ -209,6 +209,58 @@ const AnalogClock = () => {
                     background: #4a5463;
                     border-radius: 50%;
                 }
+
+                /* Custom Heart Checkbox */
+                .heart-container input {
+                    position: absolute;
+                    opacity: 0;
+                    cursor: pointer;
+                    height: 0;
+                    width: 0;
+                }
+
+                .heart-container {
+                    display: block;
+                    position: relative;
+                    cursor: pointer;
+                    font-size: 14px;
+                    user-select: none;
+                    transition: 100ms;
+                }
+
+                .heart-checkmark {
+                    top: 0;
+                    left: 0;
+                    height: 1.6em;
+                    width: 1.6em;
+                    transition: 100ms;
+                    animation: dislike_effect 400ms ease;
+                }
+
+                .heart-container input:checked ~ .heart-checkmark path {
+                    fill: #FF5353;
+                    stroke-width: 0;
+                }
+
+                .heart-container input:checked ~ .heart-checkmark {
+                    animation: like_effect 400ms ease;
+                }
+
+                .heart-container:hover {
+                    transform: scale(1.1);
+                }
+
+                @keyframes like_effect {
+                    0% { transform: scale(0); }
+                    50% { transform: scale(1.2); }
+                    100% { transform: scale(1); }
+                }
+
+                @keyframes dislike_effect {
+                    0% { transform: scale(0); }
+                    50% { transform: scale(1.2); }
+                    100% { transform: scale(1); }
+                }
             `}</style>
 
             <div className="neu-clock-container">
@@ -415,7 +467,7 @@ const InteractiveWidget = () => {
 
 // --- Main Component ---
 
-const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, tasks, blocks, onToggleTaskStatus, notes: allNotes, setNotes }) => {
+const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, isDarkMode, tasks, blocks, onToggleTaskStatus, notes: allNotes, setNotes }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [now, setNow] = useState(new Date());
     const [mobileTab, setMobileTab] = useState<'schedule' | 'plan'>('schedule');
@@ -509,11 +561,14 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, tasks, block
 
         // 2. Add Tasks/Events for this date
         tasks.forEach(task => {
-            if (task.date === selectedDateStr && task.time) {
+            if (task.date === selectedDateStr) {
+                // Determine start time (use valid time or empty string for "all day"/unscheduled)
+                const startTime = task.time || '';
+
                 items.push({
                     id: task.id,
                     title: task.title,
-                    startTime: task.time,
+                    startTime: startTime,
                     type: task.type === 'event' ? 'event' : 'task',
                     color: task.color || 'slate',
                     icon: task.type === 'event' ? 'event' : 'check_circle',
@@ -635,15 +690,13 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, tasks, block
     }, [tasks, currentDate]);
 
     const completionStats = useMemo(() => {
-        const total = dailyTasks.length;
-        const currentMins = now.getHours() * 60 + now.getMinutes();
-        const isToday = currentDate.toDateString() === now.toDateString();
-
-        const completed = dailyTasks.filter(t => t.status === 'completed').length;
+        const actionableTasks = dailyTasks.filter(t => t.type !== 'event');
+        const total = actionableTasks.length;
+        const completed = actionableTasks.filter(t => t.status === 'completed').length;
 
         const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
         return { total, completed, percent };
-    }, [dailyTasks, now, currentDate]);
+    }, [dailyTasks]);
 
     const upcomingTasks = useMemo(() => {
         const targetDate = new Date(currentDate);
@@ -1080,12 +1133,29 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, tasks, block
                                                                     <div className={`px-3 py-2 border-x ${blockColor.border} ${blockColor.bg} flex items-center`}>
                                                                         <div className={`flex-1 bg-white dark:bg-surface-dark p-3 rounded-lg border border-black/5 dark:border-white/5 shadow-sm flex items-center gap-3 transition-colors ${isCompleted ? 'opacity-60' : ''}`}>
                                                                             {item.type === 'task' ? (
-                                                                                <button
-                                                                                    onClick={() => onToggleTaskStatus(item.id)}
-                                                                                    className={`shrink-0 w-5 h-5 rounded flex items-center justify-center border transition-all ${isCompleted ? 'bg-primary border-primary text-white' : 'border-slate-300 dark:border-slate-600 text-transparent hover:border-primary'}`}
-                                                                                >
-                                                                                    <span className="material-symbols-outlined text-[14px] font-bold">check</span>
-                                                                                </button>
+                                                                                <label className="heart-container" onClick={(e) => e.stopPropagation()}>
+                                                                                    <input
+                                                                                        type="checkbox"
+                                                                                        checked={isCompleted}
+                                                                                        onChange={(e) => {
+                                                                                            if (!isCompleted) {
+                                                                                                confetti({
+                                                                                                    particleCount: 40,
+                                                                                                    spread: 60,
+                                                                                                    origin: { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight },
+                                                                                                    colors: ['#FF5353', '#FF69B4', '#FFD700'],
+                                                                                                });
+                                                                                            }
+                                                                                            onToggleTaskStatus(item.id);
+                                                                                        }}
+                                                                                    />
+                                                                                    <div className="heart-checkmark">
+                                                                                        <svg viewBox="0 0 256 256">
+                                                                                            <rect fill="none" height="256" width="256"></rect>
+                                                                                            <path d="M224.6,51.9a59.5,59.5,0,0,0-43-19.9,60.5,60.5,0,0,0-44,17.6L128,59.1l-7.5-7.4C97.2,28.3,59.2,26.3,35.9,47.4a59.9,59.9,0,0,0-2.3,87l83.1,83.1a15.9,15.9,0,0,0,22.6,0l81-81C243.7,113.2,245.6,75.2,224.6,51.9Z" strokeWidth="20px" stroke={isDarkMode ? "#94a3b8" : "#64748b"} fill="none"></path>
+                                                                                        </svg>
+                                                                                    </div>
+                                                                                </label>
                                                                             ) : (
                                                                                 <div className="shrink-0 w-5 h-5 flex items-center justify-center text-slate-400">
                                                                                     <span className="material-symbols-outlined text-[18px]">event</span>
@@ -1186,16 +1256,29 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, tasks, block
                                                                         </div>
                                                                     </div>
                                                                     {item.type === 'task' && (
-                                                                        <button
-                                                                            onClick={() => onToggleTaskStatus(item.id)}
-                                                                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0
-                                                                ${isCompleted
-                                                                                    ? 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400'
-                                                                                    : 'bg-slate-100 text-slate-400 hover:bg-primary hover:text-white dark:bg-white/5'}
-                                                            `}
-                                                                        >
-                                                                            <span className="material-symbols-outlined text-[18px]">check</span>
-                                                                        </button>
+                                                                        <label className="heart-container" onClick={(e) => e.stopPropagation()}>
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={isCompleted}
+                                                                                onChange={(e) => {
+                                                                                    if (!isCompleted) {
+                                                                                        confetti({
+                                                                                            particleCount: 40,
+                                                                                            spread: 60,
+                                                                                            origin: { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight },
+                                                                                            colors: ['#FF5353', '#FF69B4', '#FFD700'],
+                                                                                        });
+                                                                                    }
+                                                                                    onToggleTaskStatus(item.id);
+                                                                                }}
+                                                                            />
+                                                                            <div className="heart-checkmark">
+                                                                                <svg viewBox="0 0 256 256">
+                                                                                    <rect fill="none" height="256" width="256"></rect>
+                                                                                    <path d="M224.6,51.9a59.5,59.5,0,0,0-43-19.9,60.5,60.5,0,0,0-44,17.6L128,59.1l-7.5-7.4C97.2,28.3,59.2,26.3,35.9,47.4a59.9,59.9,0,0,0-2.3,87l83.1,83.1a15.9,15.9,0,0,0,22.6,0l81-81C243.7,113.2,245.6,75.2,224.6,51.9Z" strokeWidth="20px" stroke={isDarkMode ? "#94a3b8" : "#64748b"} fill="none"></path>
+                                                                                </svg>
+                                                                            </div>
+                                                                        </label>
                                                                     )}
                                                                 </div>
                                                             </div>
@@ -1226,7 +1309,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, tasks, block
                     <div className="flex-1 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-2xl overflow-hidden flex flex-col shadow-xl shadow-slate-200/50 dark:shadow-none min-h-0">
                         <div className="px-5 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-slate-50/50 dark:bg-white/5">
                             <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                <span className="material-symbols-outlined text-slate-400">check_circle</span>
+                                <span className="material-symbols-outlined text-slate-500">check_circle</span>
                                 To-Do List
                             </h3>
                             <div className="text-xs font-bold text-slate-400 bg-slate-100 dark:bg-white/10 px-2 py-1 rounded-full">
@@ -1268,17 +1351,34 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, tasks, block
                                     <div key={task.id} className={`${c.bg} p-3 rounded-2xl border ${c.border} shadow-sm 
                                         ${isActuallyCompleted ? 'grayscale opacity-60' : ''} 
                                         transition-all group relative overflow-hidden`}>
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-4">
                                             {task.type === 'task' ? (
-                                                <button
-                                                    onClick={() => onToggleTaskStatus(task.id)}
-                                                    className={`shrink-0 w-4.5 h-4.5 rounded-full border-2 flex items-center justify-center transition-all ${isActuallyCompleted ? 'bg-primary border-primary text-white' : 'border-slate-300 dark:border-slate-600 bg-transparent text-transparent hover:border-primary'}`}
-                                                >
-                                                    <span className="material-symbols-outlined text-[14px] font-bold">check</span>
-                                                </button>
+                                                <label className="heart-container" onClick={(e) => e.stopPropagation()}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isActuallyCompleted}
+                                                        onChange={(e) => {
+                                                            if (!isActuallyCompleted) {
+                                                                confetti({
+                                                                    particleCount: 40,
+                                                                    spread: 60,
+                                                                    origin: { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight },
+                                                                    colors: ['#FF5353', '#FF69B4', '#FFD700'],
+                                                                });
+                                                            }
+                                                            onToggleTaskStatus(task.id);
+                                                        }}
+                                                    />
+                                                    <div className="heart-checkmark">
+                                                        <svg viewBox="0 0 256 256">
+                                                            <rect fill="none" height="256" width="256"></rect>
+                                                            <path d="M224.6,51.9a59.5,59.5,0,0,0-43-19.9,60.5,60.5,0,0,0-44,17.6L128,59.1l-7.5-7.4C97.2,28.3,59.2,26.3,35.9,47.4a59.9,59.9,0,0,0-2.3,87l83.1,83.1a15.9,15.9,0,0,0,22.6,0l81-81C243.7,113.2,245.6,75.2,224.6,51.9Z" strokeWidth="20px" stroke={isDarkMode ? "#94a3b8" : "#64748b"} fill="none"></path>
+                                                        </svg>
+                                                    </div>
+                                                </label>
                                             ) : (
-                                                <div className="shrink-0 w-4.5 h-4.5 flex items-center justify-center text-slate-400">
-                                                    <span className="material-symbols-outlined text-[20px]">event</span>
+                                                <div className="shrink-0 w-4.5 h-4.5 flex items-center justify-center text-slate-500">
+                                                    <span className="material-symbols-outlined text-[23px]">event</span>
                                                 </div>
                                             )}
 
@@ -1296,7 +1396,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, tasks, block
 
                                                 {task.time && (
                                                     <div className="flex items-center gap-2 mt-1">
-                                                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                                        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
                                                             <span className="material-symbols-outlined text-[14px]">schedule</span>
                                                             {task.time?.slice(0, 5)}
                                                         </span>
