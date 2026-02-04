@@ -19,8 +19,8 @@ export default defineConfig(({ mode }) => {
           name: 'MH Daily',
           short_name: 'MH Daily',
           description: 'Your personal productivity dashboard with calendar, tasks, and whiteboard',
-          theme_color: '#017a6c',
-          background_color: '#f9fafa',
+          theme_color: '#F5F5F5',
+          background_color: '#F5F5F5',
           display: 'standalone',
           orientation: 'portrait',
           scope: '/',
@@ -42,6 +42,7 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,jpeg,jpg,woff,woff2}'],
+          navigateFallbackDenylist: [/^\/index.html/],
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

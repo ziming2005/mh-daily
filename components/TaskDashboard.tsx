@@ -1330,10 +1330,23 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, isDarkMode, 
                             )}
 
                             {dailyTasks.map(task => {
+                                const isEvent = task.type === 'event';
+                                let isActuallyCompleted = task.status === 'completed';
+
+                                // Auto-mark logic for events
+                                if (isEvent && !isActuallyCompleted && task.time) {
+                                    const taskMins = timeToMinutes(task.time);
+                                    const todayStr = now.toLocaleDateString('en-CA');
+                                    if (task.date < todayStr) {
+                                        isActuallyCompleted = true;
+                                    } else if (task.date === todayStr && taskMins < currentMins) {
+                                        isActuallyCompleted = true;
+                                    }
+                                }
+
                                 const isPast = isToday && task.time && timeToMinutes(task.time) < currentMins;
-                                const isActuallyCompleted = task.status === 'completed';
                                 // Visual state for the card (grey out if past OR completed)
-                                const isVisuallyDisabled = isActuallyCompleted || isPast;
+                                const isVisuallyDisabled = isActuallyCompleted || (isEvent && isPast);
                                 const colorMap: Record<string, { bg: string, border: string, text: string, accent: string, flag: string }> = {
                                     blue: { bg: 'bg-blue-100 dark:bg-blue-900/30', border: 'border-blue-200 dark:border-blue-700/50', text: 'text-blue-700 dark:text-blue-400', accent: 'text-blue-500', flag: 'text-blue-500' },
                                     red: { bg: 'bg-red-100 dark:bg-red-900/30', border: 'border-red-200 dark:border-red-700/50', text: 'text-red-700 dark:text-red-400', accent: 'text-red-500', flag: 'text-red-500' },
@@ -1384,9 +1397,12 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, isDarkMode, 
 
                                             <div className="flex-1 min-w-0 flex flex-col justify-center">
                                                 <div className="flex items-center justify-between gap-2">
-                                                    <p className={`text-sm font-bold truncate leading-tight ${isActuallyCompleted ? 'line-through text-slate-500' : 'text-slate-900 dark:text-white'}`}>
-                                                        {task.title}
-                                                    </p>
+                                                    <div className="relative flex items-center gap-2 min-w-0 w-fit max-w-full">
+                                                        <p className={`text-sm font-bold truncate leading-tight ${isActuallyCompleted ? 'text-slate-500' : 'text-slate-900 dark:text-white'}`}>
+                                                            {task.title}
+                                                        </p>
+                                                        {isActuallyCompleted && <div className="absolute left-0 right-0 top-[52%] h-[1.6px] bg-red-600/80 pointer-events-none" />}
+                                                    </div>
                                                     {task.urgency && task.urgency !== 'Normal' && (
                                                         <span className={`material-symbols-outlined text-[18px] filled shrink-0 ${task.urgency === 'High' ? 'text-red-500' :
                                                             task.urgency === 'Medium' ? 'text-amber-500' : 'text-blue-500'
@@ -1395,11 +1411,12 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, isDarkMode, 
                                                 </div>
 
                                                 {task.time && (
-                                                    <div className="flex items-center gap-2 mt-1">
+                                                    <div className="relative flex items-center gap-2 mt-1 w-fit">
                                                         <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
                                                             <span className="material-symbols-outlined text-[14px]">schedule</span>
-                                                            {task.time?.slice(0, 5)}
+                                                            {task.time.slice(0, 5)}
                                                         </span>
+                                                        {isActuallyCompleted && <div className="absolute left-0 right-0 top-[50%] h-[1.2px] bg-red-600/60 pointer-events-none" />}
                                                     </div>
                                                 )}
                                             </div>

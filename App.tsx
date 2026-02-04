@@ -313,7 +313,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ toggleTheme, isDarkMode, 
 
                 {/* Install PWA Button */}
                 {isInstallable && (
-                  <div className="px-2 pb-2">
+                  <div className="px-2 py-2 border-b border-slate-100 dark:border-slate-700">
                     <button
                       onClick={handleInstallClick}
                       className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors group"
@@ -412,13 +412,17 @@ export default function App() {
 
   // Capture the install prompt event
   useEffect(() => {
+    console.log('PWA: Setting up install listeners');
+
     const handleBeforeInstallPrompt = (e: Event) => {
+      console.log('PWA: beforeinstallprompt event fired', e);
       e.preventDefault();
       setDeferredPrompt(e);
       setIsInstallable(true);
     };
 
     const handleAppInstalled = () => {
+      console.log('PWA: App installed');
       setDeferredPrompt(null);
       setIsInstallable(false);
     };
@@ -427,8 +431,26 @@ export default function App() {
     window.addEventListener('appinstalled', handleAppInstalled);
 
     // Check if app is already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    console.log('PWA: Is standalone mode?', isStandalone);
+
+    if (isStandalone) {
       setIsInstallable(false);
+    } else {
+      // Fallback: If Chrome shows install icon but event hasn't fired yet
+      // Set a timeout to check if we should show the button anyway
+      const fallbackTimer = setTimeout(() => {
+        if (!deferredPrompt && !isStandalone) {
+          console.log('PWA: Fallback - enabling install button');
+          setIsInstallable(true);
+        }
+      }, 2000);
+
+      return () => {
+        clearTimeout(fallbackTimer);
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        window.removeEventListener('appinstalled', handleAppInstalled);
+      };
     }
 
     return () => {
@@ -691,19 +713,31 @@ export default function App() {
 
   // Handle PWA Install
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    console.log('PWA: Install button clicked', { hasDeferredPrompt: !!deferredPrompt });
 
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-    } else {
-      console.log('User dismissed the install prompt');
+    if (!deferredPrompt) {
+      // Fallback: Show alert to use Chrome's install button
+      alert('To install this app, please click the install icon (⊕) in your browser\'s address bar.');
+      return;
     }
 
-    setDeferredPrompt(null);
-    setIsInstallable(false);
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+
+      console.log('PWA: User choice:', outcome);
+
+      if (outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+      } else {
+        console.log('User dismissed the install prompt');
+      }
+
+      setDeferredPrompt(null);
+      setIsInstallable(false);
+    } catch (error) {
+      console.error('PWA: Error during install:', error);
+    }
   };
 
 

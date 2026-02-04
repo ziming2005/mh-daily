@@ -607,18 +607,18 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                     display: block;
                     position: relative;
                     cursor: pointer;
-                    font-size: 13px;
+                    font-size: 15px;
                     user-select: none;
                     transition: 100ms;
                     transform: translateZ(5px);
                 }
 
                 .carousel-card .heart-container {
-                    font-size: 10px;
+                    font-size: 12px;
                 }
 
                 .heart-expanded {
-                    font-size: 15px;
+                    font-size: 16px;
                 }
 
                 .heart-checkmark {
@@ -792,8 +792,8 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                                 >
                                                     <div className="card-glow"></div>
 
-                                                    <div className="flex justify-between items-center mb-3">
-                                                        <h3 className={`text-[16px] font-bold ${group.isOverdue ? 'text-red-600' : 'text-slate-900 dark:text-white'}`}>
+                                                    <div className="flex justify-between items-center px-1 mb-2">
+                                                        <h3 className={`text-[16px] font-semibold ${group.isOverdue ? 'text-red-600' : 'text-slate-900 dark:text-white'}`}>
                                                             {group.label}
                                                         </h3>
                                                         <div className="flex items-center gap-1.5 px-2 py-1 bg-white/50 dark:bg-black/20 rounded-full border border-white/20">
@@ -802,7 +802,7 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                                     </div>
 
                                                     <div
-                                                        className="flex-1 overflow-y-auto custom-scrollbar space-y-2"
+                                                        className="flex-1 overflow-y-auto custom-scrollbar space-y-1"
                                                         style={{ transform: 'translateZ(1px)' }}
                                                         onWheel={(e) => e.stopPropagation()}
                                                         onMouseDown={(e) => {
@@ -842,13 +842,28 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                                             </div>
                                                         ) : (
                                                             group.tasks.map(task => {
-                                                                const isCompleted = task.status === 'completed';
-                                                                const isEvent = task.type === 'event';
+                                                                
+                                        const isEvent = task.type === 'event';
+                                        let isCompleted = task.status === 'completed';
+
+                                        if (isEvent && !isCompleted && task.time) {
+                                            const now = new Date();
+                                            const todayStr = now.toLocaleDateString('en-CA');
+                                            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                                            const [h, m] = task.time.split(':').map(Number);
+                                            const taskMinutes = h * 60 + m;
+
+                                            if (task.date < todayStr) {
+                                                isCompleted = true;
+                                            } else if (task.date === todayStr && taskMinutes < currentMinutes) {
+                                                isCompleted = true;
+                                            }
+                                        }
 
                                                                 return (
                                                                     <div
                                                                         key={task.id}
-                                                                        className={`flex items-center gap-4 p-2 pl-3 rounded-xl transition-all ${isCompleted ? 'opacity-40' : 'bg-white/40 dark:bg-black/20 hover:bg-white/60 dark:hover:bg-black/40'}`}
+                                                                        className={`flex items-center gap-4 p-2 pl-3 rounded-xl transition-all`}
                                                                     >
                                                                         {!isEvent ? (
                                                                             <label
@@ -868,28 +883,38 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                                                                 <div className="heart-checkmark">
                                                                                     <svg viewBox="0 0 256 256">
                                                                                         <rect fill="none" height="256" width="256"></rect>
-                                                                                        <path d="M224.6,51.9a59.5,59.5,0,0,0-43-19.9,60.5,60.5,0,0,0-44,17.6L128,59.1l-7.5-7.4C97.2,28.3,59.2,26.3,35.9,47.4a59.9,59.9,0,0,0-2.3,87l83.1,83.1a15.9,15.9,0,0,0,22.6,0l81-81C243.7,113.2,245.6,75.2,224.6,51.9Z" strokeWidth="20px" stroke={isDarkMode ? "#94a3b8" : "#64748b"} fill="none"></path>
+                                                                                        <path
+                                                                                            d="M224.6,51.9a59.5,59.5,0,0,0-43-19.9,60.5,60.5,0,0,0-44,17.6L128,59.1l-7.5-7.4C97.2,28.3,59.2,26.3,35.9,47.4a59.9,59.9,0,0,0-2.3,87l83.1,83.1a15.9,15.9,0,0,0,22.6,0l81-81C243.7,113.2,245.6,75.2,224.6,51.9Z"
+                                                                                            strokeWidth="20px"
+                                                                                            stroke={task.color || (isDarkMode ? "#94a3b8" : "#64748b")}
+                                                                                            style={{ fill: isCompleted ? (task.color || "#FF5353") : 'none' }}
+                                                                                        ></path>
                                                                                     </svg>
                                                                                 </div>
                                                                             </label>
                                                                         ) : (
-                                                                            <span className="material-symbols-outlined text-[16px] text-slate-500 shrink-0">event</span>
+                                                                            <span
+                                                                                className="material-symbols-outlined text-[18px] shrink-0"
+                                                                                style={{ color: task.color || '#64748b' }}
+                                                                            >event</span>
                                                                         )}
                                                                         <div className="flex-1 min-w-0">
-                                                                            <div className="flex items-center gap-1.5">
-                                                                                <p className={`text-[12px] font-medium truncate ${isCompleted ? 'line-through text-slate-500' : 'text-slate-800 dark:text-white'}`}>
+                                                                            <div className="relative flex items-center gap-1.5 w-fit max-w-full">
+                                                                                <p className={`text-[12px] font-semibold truncate ${isCompleted ? 'text-slate-600' : 'text-slate-800 dark:text-white'}`}>
                                                                                     {task.title}
                                                                                 </p>
                                                                                 {task.urgency !== 'Normal' && (
                                                                                     <span className={`material-symbols-outlined text-[14px] filled shrink-0 ${task.urgency === 'High' ? 'text-red-500' :
                                                                                         task.urgency === 'Medium' ? 'text-amber-500' : 'text-blue-500'
-                                                                                        }`}>flag</span>
+                                                                                        } ${isCompleted ? 'opacity-50' : ''}`}>flag</span>
                                                                                 )}
+                                                                                {isCompleted && <div className="absolute left-0 right-0 top-[52%] h-[1.6px] bg-red-600/80 pointer-events-none" />}
                                                                             </div>
                                                                             {task.time && (
-                                                                                <div className="flex items-center gap-1 mt-0.5">
-                                                                                    <span className="material-symbols-outlined text-[12px] text-slate-500 !leading-none">schedule</span>
-                                                                                    <span className="text-[10px] font-bold text-slate-500 uppercase leading-none">{task.time.slice(0, 5)}</span>
+                                                                                <div className={`relative flex items-center gap-1 mt-1 w-fit`}>
+                                                                                    <span className={`material-symbols-outlined text-[12px] !leading-none ${isCompleted ? 'text-slate-500' : 'text-slate-600'}`}>schedule</span>
+                                                                                    <span className={`text-[10px] font-semibold uppercase leading-none ${isCompleted ? 'text-slate-500' : 'text-slate-600'}`}>{task.time.slice(0, 5)}</span>
+                                                                                    {isCompleted && <div className="absolute left-0 right-0 top-[48%] h-[1.6px] bg-red-600/80 pointer-events-none" />}
                                                                                 </div>
                                                                             )}
                                                                         </div>
@@ -927,26 +952,41 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                             return (
                                                 <div
                                                     key={group.id}
-                                                    className={`w-full h-fit rounded-[2rem] p-5 border ${colStyle} transition-all shadow-sm flex flex-col`}
+                                                    className={`w-full h-fit rounded-[2rem] py-5 px-4 border ${colStyle} transition-all shadow-sm flex flex-col`}
                                                 >
                                                     <h3 className={`text-xl font-bold mb-4 px-2 ${group.isOverdue ? 'text-red-600 dark:text-red-400' : 'text-slate-700 dark:text-slate-100'}`}>
                                                         {group.label}
                                                     </h3>
 
-                                                    <div className="space-y-3">
+                                                    <div className="space-y-1">
                                                         {group.tasks.length === 0 && (
                                                             <div className="py-8 text-center text-slate-400 dark:text-slate-500 text-sm italic">
                                                                 No tasks
                                                             </div>
                                                         )}
                                                         {group.tasks.map(task => {
-                                                            const isCompleted = task.status === 'completed';
-                                                            const isEvent = task.type === 'event';
+                                                            
+                                        const isEvent = task.type === 'event';
+                                        let isCompleted = task.status === 'completed';
+
+                                        if (isEvent && !isCompleted && task.time) {
+                                            const now = new Date();
+                                            const todayStr = now.toLocaleDateString('en-CA');
+                                            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                                            const [h, m] = task.time.split(':').map(Number);
+                                            const taskMinutes = h * 60 + m;
+
+                                            if (task.date < todayStr) {
+                                                isCompleted = true;
+                                            } else if (task.date === todayStr && taskMinutes < currentMinutes) {
+                                                isCompleted = true;
+                                            }
+                                        }
 
                                                             return (
                                                                 <div
                                                                     key={task.id}
-                                                                    className={`group flex items-center gap-4 cursor-pointer hover:bg-white/40 dark:hover:bg-black/20 p-2 rounded-lg transition-colors ${isCompleted ? 'opacity-50' : ''}`}
+                                                                    className={`group flex items-center gap-5 cursor-pointer hover:bg-white/40 dark:hover:bg-black/20 px-3 py-3 rounded-lg transition-colors`}
                                                                     onClick={() => handleEdit(task)}
                                                                 >
                                                                     {!isEvent ? (
@@ -962,28 +1002,38 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                                                             <div className="heart-checkmark">
                                                                                 <svg viewBox="0 0 256 256">
                                                                                     <rect fill="none" height="256" width="256"></rect>
-                                                                                    <path d="M224.6,51.9a59.5,59.5,0,0,0-43-19.9,60.5,60.5,0,0,0-44,17.6L128,59.1l-7.5-7.4C97.2,28.3,59.2,26.3,35.9,47.4a59.9,59.9,0,0,0-2.3,87l83.1,83.1a15.9,15.9,0,0,0,22.6,0l81-81C243.7,113.2,245.6,75.2,224.6,51.9Z" strokeWidth="20px" stroke={isDarkMode ? "#94a3b8" : "#64748b"} fill="none"></path>
+                                                                                    <path
+                                                                                        d="M224.6,51.9a59.5,59.5,0,0,0-43-19.9,60.5,60.5,0,0,0-44,17.6L128,59.1l-7.5-7.4C97.2,28.3,59.2,26.3,35.9,47.4a59.9,59.9,0,0,0-2.3,87l83.1,83.1a15.9,15.9,0,0,0,22.6,0l81-81C243.7,113.2,245.6,75.2,224.6,51.9Z"
+                                                                                        strokeWidth="20px"
+                                                                                        stroke={task.color || (isDarkMode ? "#94a3b8" : "#64748b")}
+                                                                                        style={{ fill: isCompleted ? (task.color || "#FF5353") : 'none' }}
+                                                                                    ></path>
                                                                                 </svg>
                                                                             </div>
                                                                         </label>
                                                                     ) : (
-                                                                        <span className={`material-symbols-outlined text-[22px] text-slate-500`}>event</span>
+                                                                        <span
+                                                                            className={`material-symbols-outlined text-[24px]`}
+                                                                            style={{ color: task.color || '#64748b' }}
+                                                                        >event</span>
                                                                     )}
                                                                     <div className="flex-1 min-w-0">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <p className={`text-base font-semibold text-slate-800 dark:text-white leading-snug tracking-tight truncate ${isCompleted ? 'line-through' : ''}`}>
+                                                                        <div className="relative flex items-center gap-2 w-fit max-w-full">
+                                                                            <p className={`text-base font-semibold leading-snug tracking-tight truncate ${isCompleted ? 'text-slate-500' : 'text-slate-800 dark:text-white'}`}>
                                                                                 {task.title}
                                                                             </p>
                                                                             {task.urgency !== 'Normal' && (
                                                                                 <span className={`material-symbols-outlined text-[18px] filled shrink-0 ${task.urgency === 'High' ? 'text-red-500' :
                                                                                     task.urgency === 'Medium' ? 'text-amber-500' : 'text-blue-500'
-                                                                                    }`}>flag</span>
+                                                                                    } ${isCompleted ? 'opacity-50' : ''}`}>flag</span>
                                                                             )}
+                                                                            {isCompleted && <div className="absolute left-0 -right-0.5 top-[52%] h-[2.1px] bg-red-600/80 pointer-events-none" />}
                                                                         </div>
                                                                         {task.time && (
-                                                                            <div className="mt-1.5 flex items-center gap-1.5">
-                                                                                <span className="material-symbols-outlined text-[16px] text-slate-600">schedule</span>
-                                                                                <span className="text-sm font-semibold text-slate-600 dark:text-slate-500 tabular-nums tracking-tight">{task.time?.slice(0, 5)}</span>
+                                                                            <div className="relative mt-1.5 flex items-center gap-1.5 w-fit">
+                                                                                <span className={`material-symbols-outlined text-[16px] ${isCompleted ? 'text-slate-500' : 'text-slate-600 dark:text-slate-500'}`}>schedule</span>
+                                                                                <span className={`text-sm font-semibold tabular-nums tracking-tight ${isCompleted ? 'text-slate-500' : 'text-slate-600 dark:text-slate-500'}`}>{task.time?.slice(0, 5)}</span>
+                                                                                {isCompleted && <div className="absolute left-0 -right-0.5 top-[50%] h-[1.6px] bg-red-600/80 pointer-events-none" />}
                                                                             </div>
                                                                         )}
                                                                     </div>
@@ -1033,20 +1083,20 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                         }}
                     >
                         {/* Daily Focus Header & Content */}
-                        <div className="h-full flex flex-col p-8">
-                            <div className="flex justify-between items-start mb-8">
-                                <h2 className={`text-3xl font-bold tracking-tight ${focusedGroup.isOverdue ? 'text-red-600' : 'text-slate-900 dark:text-white'}`}>
+                        <div className="h-full flex flex-col py-6 px-5">
+                            <div className="flex justify-between items-start mb-6">
+                                <h2 className={`text-3xl font-semibold px-3 tracking-normal ${focusedGroup.isOverdue ? 'text-red-600' : 'text-slate-800 dark:text-white'}`}>
                                     {focusedGroup.label}
                                 </h2>
                                 <button
                                     onClick={() => setFocusedGroupId(null)}
-                                    className="w-12 h-12 rounded-full bg-white/60 hover:bg-white/90 flex items-center justify-center transition-colors"
+                                    className="w-10 h-10 rounded-full bg-white/50 hover:bg-white/90 flex items-center justify-center transition-colors"
                                 >
                                     <span className="material-symbols-outlined text-slate-800 dark:text-white">close</span>
                                 </button>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3">
+                            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2">
                                 {focusedGroup.tasks.length === 0 ? (
                                     <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
                                         <span className="material-symbols-outlined text-[64px] mb-4">task_alt</span>
@@ -1054,12 +1104,26 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                     </div>
                                 ) : (
                                     focusedGroup.tasks.map(task => {
-                                        const isCompleted = task.status === 'completed';
                                         const isEvent = task.type === 'event';
+                                        let isCompleted = task.status === 'completed';
+
+                                        if (isEvent && !isCompleted && task.time) {
+                                            const now = new Date();
+                                            const todayStr = now.toLocaleDateString('en-CA');
+                                            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                                            const [h, m] = task.time.split(':').map(Number);
+                                            const taskMinutes = h * 60 + m;
+
+                                            if (task.date < todayStr) {
+                                                isCompleted = true;
+                                            } else if (task.date === todayStr && taskMinutes < currentMinutes) {
+                                                isCompleted = true;
+                                            }
+                                        }
                                         return (
                                             <div
                                                 key={task.id}
-                                                className={`group px-4 py-3 cursor-pointer rounded-2xl transition-all ${isCompleted ? 'opacity-50' : 'bg-white/40 dark:bg-black/30 hover:bg-white/60 dark:hover:bg-black/50 shadow-sm'}`}
+                                                className={`group px-3 py-3.5 cursor-pointer rounded-2xl transition-all ${isCompleted ? '' : 'hover:bg-white/40 dark:hover:bg-black/50'}`}
                                                 onClick={() => handleEdit(task)}
                                             >
                                                 <div className="flex items-center gap-4">
@@ -1081,29 +1145,39 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                                             <div className="heart-checkmark">
                                                                 <svg viewBox="0 0 256 256">
                                                                     <rect fill="none" height="256" width="256"></rect>
-                                                                    <path d="M224.6,51.9a59.5,59.5,0,0,0-43-19.9,60.5,60.5,0,0,0-44,17.6L128,59.1l-7.5-7.4C97.2,28.3,59.2,26.3,35.9,47.4a59.9,59.9,0,0,0-2.3,87l83.1,83.1a15.9,15.9,0,0,0,22.6,0l81-81C243.7,113.2,245.6,75.2,224.6,51.9Z" strokeWidth="20px" stroke={isDarkMode ? "#94a3b8" : "#64748b"} fill="none"></path>
+                                                                    <path
+                                                                        d="M224.6,51.9a59.5,59.5,0,0,0-43-19.9,60.5,60.5,0,0,0-44,17.6L128,59.1l-7.5-7.4C97.2,28.3,59.2,26.3,35.9,47.4a59.9,59.9,0,0,0-2.3,87l83.1,83.1a15.9,15.9,0,0,0,22.6,0l81-81C243.7,113.2,245.6,75.2,224.6,51.9Z"
+                                                                        strokeWidth="20px"
+                                                                        stroke={task.color || (isDarkMode ? "#94a3b8" : "#64748b")}
+                                                                        style={{ fill: isCompleted ? (task.color || "#FF5353") : 'none' }}
+                                                                    ></path>
                                                                 </svg>
                                                             </div>
                                                         </label>
                                                     ) : (
-                                                        <span className="material-symbols-outlined mt-1 text-[23px] text-slate-500 shrink-0">event</span>
+                                                        <span
+                                                            className="material-symbols-outlined text-[26px] shrink-0"
+                                                            style={{ color: task.color || '#64748b' }}
+                                                        >event</span>
                                                     )}
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center justify-between gap-4">
-                                                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                                <p className={`text-[17px] font-medium truncate ${isCompleted ? 'line-through' : 'text-slate-900 dark:text-white'}`}>
+                                                            <div className="relative flex items-center gap-3 min-w-0 w-fit max-w-full">
+                                                                <p className={`text-[17px] font-medium truncate ${isCompleted ? 'text-slate-600' : 'text-slate-800 dark:text-white'}`}>
                                                                     {task.title}
                                                                 </p>
                                                                 {task.urgency !== 'Normal' && (
                                                                     <span className={`material-symbols-outlined text-[20px] filled shrink-0 ${task.urgency === 'High' ? 'text-red-500' :
                                                                         task.urgency === 'Medium' ? 'text-amber-500' : 'text-blue-500'
-                                                                        }`}>flag</span>
+                                                                        } ${isCompleted ? 'opacity-50' : ''}`}>flag</span>
                                                                 )}
+                                                                {isCompleted && <div className="absolute left-0 right-0 top-[52%] h-[2.0px] bg-red-600/80 pointer-events-none" />}
                                                             </div>
                                                             {task.time && (
-                                                                <span className="text-sm font-bold text-primary bg-primary/10 px-3 py-1 rounded-full uppercase tabular-nums shrink-0 flex items-center gap-1.5">
-                                                                    <span className="material-symbols-outlined text-[16px] text-primary-600">schedule</span>
+                                                                <span className={`relative border text-[12px] font-bold px-2 py-0.5 rounded-full uppercase tabular-nums shrink-0 flex items-center gap-1.5 ${isCompleted ? 'bg-white/70 text-slate-500 border-slate-300' : 'text-primary bg-primary/10 border-primary/40'}`}>
+                                                                    <span className={`material-symbols-outlined text-[14px] !leading-none mt-[1px] ${isCompleted ? 'text-slate-500' : 'text-primary-600'}`}>schedule</span>
                                                                     {task.time.slice(0, 5)}
+                                                                    {isCompleted && <div className="absolute left-1.5 right-1.5 top-[48%] h-[1.6px] bg-red-600/80 pointer-events-none" />}
                                                                 </span>
                                                             )}
                                                         </div>
@@ -1123,7 +1197,7 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                         const dateObj = new Date(y, m - 1, d);
                                         handleAddNewForDate(dateObj);
                                     }}
-                                    className="mt-6 w-full py-3 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all text-lg"
+                                    className="mt-6 w-full py-2.5 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all text-lg"
                                 >
                                     <span className="material-symbols-outlined">add</span>
                                     ADD TASK TO {focusedGroup.label.split(',')[0].toUpperCase()}
