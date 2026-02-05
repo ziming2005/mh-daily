@@ -254,7 +254,7 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
         const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
         const deltaX = clientX - startX.current;
         // Sensitivity: 0.5 degrees per pixel
-        setRotationAngle(baseAngle.current + deltaX * 0.5);
+        setRotationAngle(baseAngle.current + deltaX * 0.6);
     };
 
     const handleCardClick = (group: TaskGroup) => {
@@ -842,23 +842,23 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                                             </div>
                                                         ) : (
                                                             group.tasks.map(task => {
-                                                                
-                                        const isEvent = task.type === 'event';
-                                        let isCompleted = task.status === 'completed';
 
-                                        if (isEvent && !isCompleted && task.time) {
-                                            const now = new Date();
-                                            const todayStr = now.toLocaleDateString('en-CA');
-                                            const currentMinutes = now.getHours() * 60 + now.getMinutes();
-                                            const [h, m] = task.time.split(':').map(Number);
-                                            const taskMinutes = h * 60 + m;
+                                                                const isEvent = task.type === 'event';
+                                                                let isCompleted = task.status === 'completed';
 
-                                            if (task.date < todayStr) {
-                                                isCompleted = true;
-                                            } else if (task.date === todayStr && taskMinutes < currentMinutes) {
-                                                isCompleted = true;
-                                            }
-                                        }
+                                                                if (isEvent && !isCompleted && task.time) {
+                                                                    const now = new Date();
+                                                                    const todayStr = now.toLocaleDateString('en-CA');
+                                                                    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                                                                    const [h, m] = task.time.split(':').map(Number);
+                                                                    const taskMinutes = h * 60 + m;
+
+                                                                    if (task.date < todayStr) {
+                                                                        isCompleted = true;
+                                                                    } else if (task.date === todayStr && taskMinutes < currentMinutes) {
+                                                                        isCompleted = true;
+                                                                    }
+                                                                }
 
                                                                 return (
                                                                     <div
@@ -965,23 +965,23 @@ const TaskListView: React.FC<TaskListViewProps> = ({ toggleTheme, isDarkMode, ta
                                                             </div>
                                                         )}
                                                         {group.tasks.map(task => {
-                                                            
-                                        const isEvent = task.type === 'event';
-                                        let isCompleted = task.status === 'completed';
 
-                                        if (isEvent && !isCompleted && task.time) {
-                                            const now = new Date();
-                                            const todayStr = now.toLocaleDateString('en-CA');
-                                            const currentMinutes = now.getHours() * 60 + now.getMinutes();
-                                            const [h, m] = task.time.split(':').map(Number);
-                                            const taskMinutes = h * 60 + m;
+                                                            const isEvent = task.type === 'event';
+                                                            let isCompleted = task.status === 'completed';
 
-                                            if (task.date < todayStr) {
-                                                isCompleted = true;
-                                            } else if (task.date === todayStr && taskMinutes < currentMinutes) {
-                                                isCompleted = true;
-                                            }
-                                        }
+                                                            if (isEvent && !isCompleted && task.time) {
+                                                                const now = new Date();
+                                                                const todayStr = now.toLocaleDateString('en-CA');
+                                                                const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                                                                const [h, m] = task.time.split(':').map(Number);
+                                                                const taskMinutes = h * 60 + m;
+
+                                                                if (task.date < todayStr) {
+                                                                    isCompleted = true;
+                                                                } else if (task.date === todayStr && taskMinutes < currentMinutes) {
+                                                                    isCompleted = true;
+                                                                }
+                                                            }
 
                                                             return (
                                                                 <div

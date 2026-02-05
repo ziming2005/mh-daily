@@ -676,14 +676,17 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, isDarkMode, 
         return tasks
             .filter(t => t.date === dateStr)
             .sort((a, b) => {
-                // 1. Completion status (Active first)
-                if (a.status === 'completed' && b.status !== 'completed') return 1;
-                if (a.status !== 'completed' && b.status === 'completed') return -1;
-
-                // 2. Time (Scheduled first, then Unscheduled)
-                if (a.time && b.time) return a.time.localeCompare(b.time);
+                // 1. Time (Scheduled first, then Unscheduled)
+                if (a.time && b.time) {
+                    const timeDiff = a.time.localeCompare(b.time);
+                    if (timeDiff !== 0) return timeDiff;
+                }
                 if (a.time && !b.time) return -1;
                 if (!a.time && b.time) return 1;
+
+                // 2. Completion status (Active first)
+                if (a.status === 'completed' && b.status !== 'completed') return 1;
+                if (a.status !== 'completed' && b.status === 'completed') return -1;
 
                 return 0;
             });
@@ -1152,25 +1155,26 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, isDarkMode, 
                                                                                     <div className="heart-checkmark">
                                                                                         <svg viewBox="0 0 256 256">
                                                                                             <rect fill="none" height="256" width="256"></rect>
-                                                                                            <path d="M224.6,51.9a59.5,59.5,0,0,0-43-19.9,60.5,60.5,0,0,0-44,17.6L128,59.1l-7.5-7.4C97.2,28.3,59.2,26.3,35.9,47.4a59.9,59.9,0,0,0-2.3,87l83.1,83.1a15.9,15.9,0,0,0,22.6,0l81-81C243.7,113.2,245.6,75.2,224.6,51.9Z" strokeWidth="20px" stroke={isDarkMode ? "#94a3b8" : "#64748b"} fill="none"></path>
+                                                                                            <path d="M224.6,51.9a59.5,59.5,0,0,0-43-19.9,60.5,60.5,0,0,0-44,17.6L128,59.1l-7.5-7.4C97.2,28.3,59.2,26.3,35.9,47.4a59.9,59.9,0,0,0-2.3,87l83.1,83.1a15.9,15.9,0,0,0,22.6,0l81-81C243.7,113.2,245.6,75.2,224.6,51.9Z" strokeWidth="20px" stroke={item.color || (isDarkMode ? "#94a3b8" : "#64748b")} style={{ fill: isCompleted ? (item.color || "#FF5353") : 'none' }}></path>
                                                                                         </svg>
                                                                                     </div>
                                                                                 </label>
                                                                             ) : (
-                                                                                <div className="shrink-0 w-5 h-5 flex items-center justify-center text-slate-400">
+                                                                                <div className="shrink-0 w-5 h-5 flex items-center justify-center" style={{ color: item.color || '#64748b' }}>
                                                                                     <span className="material-symbols-outlined text-[18px]">event</span>
                                                                                 </div>
                                                                             )}
                                                                             <div className="flex-1 min-w-0">
-                                                                                <div className="flex items-center gap-2 flex-wrap">
-                                                                                    <p className={`text-sm font-medium text-slate-700 dark:text-slate-200 leading-snug ${isCompleted ? 'line-through opacity-60' : ''}`}>
+                                                                                <div className="relative flex items-center gap-2 flex-wrap w-fit max-w-full">
+                                                                                    <p className={`text-sm font-medium leading-snug ${isCompleted ? 'text-slate-500' : 'text-slate-700 dark:text-slate-200'}`}>
                                                                                         {item.title}
                                                                                     </p>
                                                                                     {item.urgency && item.urgency !== 'Normal' && (
-                                                                                        <span className={`material-symbols-outlined text-[16px] filled ${item.urgency === 'High' ? 'text-red-500' :
+                                                                                        <span className={`material-symbols-outlined text-[16px] filled shrink-0 ${item.urgency === 'High' ? 'text-red-500' :
                                                                                             item.urgency === 'Medium' ? 'text-amber-500' : 'text-blue-500'
-                                                                                            }`} title={`${item.urgency} Priority`}>flag</span>
+                                                                                            } ${isCompleted ? 'opacity-50' : ''}`} title={`${item.urgency} Priority`}>flag</span>
                                                                                     )}
+                                                                                    {isCompleted && <div className="absolute left-0 right-0 top-[52%] h-[1.6px] bg-red-600/80 pointer-events-none" />}
                                                                                 </div>
                                                                             </div>
                                                                         </div>
@@ -1233,8 +1237,8 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, isDarkMode, 
                                                         return (
                                                             <div
                                                                 key={item.id}
-                                                                className={`rounded-xl p-4 transition-all duration-200 
-                                                    ${itemStyles.wrapper} 
+                                                                className={`rounded-xl p-4 transition-all duration-200
+                                                    ${itemStyles.wrapper}
                                                 `}
                                                             >
                                                                 <div className="flex items-center justify-between gap-4">
@@ -1243,15 +1247,16 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, isDarkMode, 
                                                                             <span className="material-symbols-outlined text-[24px]">{item.icon || 'check_circle'}</span>
                                                                         </div>
                                                                         <div>
-                                                                            <div className="flex items-center gap-2">
-                                                                                <h3 className={`font-bold text-sm ${itemStyles.title} ${isCompleted ? 'line-through decoration-slate-400' : ''}`}>
+                                                                            <div className="relative flex items-center gap-2 w-fit max-w-full">
+                                                                                <h3 className={`font-bold text-sm ${isCompleted ? 'text-slate-500' : itemStyles.title}`}>
                                                                                     {item.title}
                                                                                 </h3>
                                                                                 {item.urgency && item.urgency !== 'Normal' && (
-                                                                                    <span className={`material-symbols-outlined text-[16px] filled ${item.urgency === 'High' ? 'text-red-500' :
+                                                                                    <span className={`material-symbols-outlined text-[16px] filled shrink-0 ${item.urgency === 'High' ? 'text-red-500' :
                                                                                         item.urgency === 'Medium' ? 'text-amber-500' : 'text-blue-500'
-                                                                                        }`} title={`${item.urgency} Priority`}>flag</span>
+                                                                                        } ${isCompleted ? 'opacity-50' : ''}`} title={`${item.urgency} Priority`}>flag</span>
                                                                                 )}
+                                                                                {isCompleted && <div className="absolute left-0 right-0 top-[52%] h-[1.6px] bg-red-600/80 pointer-events-none" />}
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -1275,7 +1280,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, isDarkMode, 
                                                                             <div className="heart-checkmark">
                                                                                 <svg viewBox="0 0 256 256">
                                                                                     <rect fill="none" height="256" width="256"></rect>
-                                                                                    <path d="M224.6,51.9a59.5,59.5,0,0,0-43-19.9,60.5,60.5,0,0,0-44,17.6L128,59.1l-7.5-7.4C97.2,28.3,59.2,26.3,35.9,47.4a59.9,59.9,0,0,0-2.3,87l83.1,83.1a15.9,15.9,0,0,0,22.6,0l81-81C243.7,113.2,245.6,75.2,224.6,51.9Z" strokeWidth="20px" stroke={isDarkMode ? "#94a3b8" : "#64748b"} fill="none"></path>
+                                                                                    <path d="M224.6,51.9a59.5,59.5,0,0,0-43-19.9,60.5,60.5,0,0,0-44,17.6L128,59.1l-7.5-7.4C97.2,28.3,59.2,26.3,35.9,47.4a59.9,59.9,0,0,0-2.3,87l83.1,83.1a15.9,15.9,0,0,0,22.6,0l81-81C243.7,113.2,245.6,75.2,224.6,51.9Z" strokeWidth="20px" stroke={item.color || (isDarkMode ? "#94a3b8" : "#64748b")} style={{ fill: isCompleted ? (item.color || "#FF5353") : 'none' }}></path>
                                                                                 </svg>
                                                                             </div>
                                                                         </label>
@@ -1347,23 +1352,21 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, isDarkMode, 
                                 const isPast = isToday && task.time && timeToMinutes(task.time) < currentMins;
                                 // Visual state for the card (grey out if past OR completed)
                                 const isVisuallyDisabled = isActuallyCompleted || (isEvent && isPast);
-                                const colorMap: Record<string, { bg: string, border: string, text: string, accent: string, flag: string }> = {
-                                    blue: { bg: 'bg-blue-100 dark:bg-blue-900/30', border: 'border-blue-200 dark:border-blue-700/50', text: 'text-blue-700 dark:text-blue-400', accent: 'text-blue-500', flag: 'text-blue-500' },
-                                    red: { bg: 'bg-red-100 dark:bg-red-900/30', border: 'border-red-200 dark:border-red-700/50', text: 'text-red-700 dark:text-red-400', accent: 'text-red-500', flag: 'text-red-500' },
-                                    green: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', border: 'border-emerald-200 dark:border-emerald-700/50', text: 'text-emerald-700 dark:text-emerald-400', accent: 'text-emerald-500', flag: 'text-emerald-500' },
-                                    amber: { bg: 'bg-amber-100 dark:bg-amber-900/30', border: 'border-amber-200 dark:border-amber-700/50', text: 'text-amber-700 dark:text-amber-400', accent: 'text-amber-500', flag: 'text-amber-500' },
-                                    violet: { bg: 'bg-violet-100 dark:bg-violet-900/30', border: 'border-violet-200 dark:border-violet-700/50', text: 'text-violet-700 dark:text-violet-400', accent: 'text-violet-500', flag: 'text-violet-500' },
-                                    pink: { bg: 'bg-pink-100 dark:bg-pink-900/30', border: 'border-pink-200 dark:border-pink-700/50', text: 'text-pink-700 dark:text-pink-400', accent: 'text-pink-500', flag: 'text-pink-500' },
-                                    cyan: { bg: 'bg-cyan-100 dark:bg-cyan-900/30', border: 'border-cyan-200 dark:border-cyan-700/50', text: 'text-cyan-700 dark:text-cyan-400', accent: 'text-cyan-500', flag: 'text-cyan-500' },
-                                    slate: { bg: 'bg-slate-100 dark:bg-slate-800', border: 'border-slate-200 dark:border-slate-700', text: 'text-slate-700 dark:text-slate-300', accent: 'text-slate-500', flag: 'text-slate-400' },
-                                    primary: { bg: 'bg-primary/5 dark:bg-primary/10', border: 'border-primary/20', text: 'text-primary-dark dark:text-primary-light', accent: 'text-primary', flag: 'text-primary' }
+                                const colorMap: Record<string, { bg: string, bar: string, text: string, accent: string, flag: string }> = {
+                                    blue: { bg: 'bg-blue-100/60 dark:bg-blue-500/5', bar: 'border-l-blue-500', text: 'text-blue-800 dark:text-blue-300', accent: 'text-blue-500', flag: 'text-blue-500' },
+                                    red: { bg: 'bg-red-100/60 dark:bg-red-500/5', bar: 'border-l-red-500', text: 'text-red-800 dark:text-red-300', accent: 'text-red-500', flag: 'text-red-500' },
+                                    green: { bg: 'bg-emerald-100/60 dark:bg-emerald-500/5', bar: 'border-l-emerald-500', text: 'text-emerald-800 dark:text-emerald-300', accent: 'text-emerald-500', flag: 'text-emerald-500' },
+                                    amber: { bg: 'bg-amber-100/60 dark:bg-amber-500/5', bar: 'border-l-amber-500', text: 'text-amber-800 dark:text-amber-300', accent: 'text-amber-500', flag: 'text-amber-500' },
+                                    violet: { bg: 'bg-violet-100/60 dark:bg-violet-500/5', bar: 'border-l-violet-500', text: 'text-violet-800 dark:text-violet-300', accent: 'text-violet-500', flag: 'text-violet-500' },
+                                    pink: { bg: 'bg-pink-100/60 dark:bg-pink-500/5', bar: 'border-l-pink-500', text: 'text-pink-800 dark:text-pink-300', accent: 'text-pink-500', flag: 'text-pink-500' },
+                                    cyan: { bg: 'bg-cyan-100/60 dark:bg-cyan-500/5', bar: 'border-l-cyan-500', text: 'text-cyan-800 dark:text-cyan-300', accent: 'text-cyan-500', flag: 'text-cyan-500' },
+                                    slate: { bg: 'bg-slate-100/60 dark:bg-slate-500/5', bar: 'border-l-slate-400', text: 'text-slate-800 dark:text-slate-300', accent: 'text-slate-500', flag: 'text-slate-400' },
+                                    primary: { bg: 'bg-primary/10 dark:bg-primary/10', bar: 'border-l-primary', text: 'text-primary-dark dark:text-primary-light', accent: 'text-primary', flag: 'text-primary' }
                                 };
                                 const c = colorMap[task.color || 'slate'] || colorMap.slate;
 
                                 return (
-                                    <div key={task.id} className={`${c.bg} p-3 rounded-2xl border ${c.border} shadow-sm 
-                                        ${isActuallyCompleted ? 'grayscale opacity-60' : ''} 
-                                        transition-all group relative overflow-hidden`}>
+                                    <div key={task.id} className={`${c.bg} p-3 pl-4 rounded-xl border-l-[6px] ${c.bar} shadow-sm transition-all group relative overflow-hidden`}>
                                         <div className="flex items-center gap-4">
                                             {task.type === 'task' ? (
                                                 <label className="heart-container" onClick={(e) => e.stopPropagation()}>
@@ -1385,12 +1388,12 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, isDarkMode, 
                                                     <div className="heart-checkmark">
                                                         <svg viewBox="0 0 256 256">
                                                             <rect fill="none" height="256" width="256"></rect>
-                                                            <path d="M224.6,51.9a59.5,59.5,0,0,0-43-19.9,60.5,60.5,0,0,0-44,17.6L128,59.1l-7.5-7.4C97.2,28.3,59.2,26.3,35.9,47.4a59.9,59.9,0,0,0-2.3,87l83.1,83.1a15.9,15.9,0,0,0,22.6,0l81-81C243.7,113.2,245.6,75.2,224.6,51.9Z" strokeWidth="20px" stroke={isDarkMode ? "#94a3b8" : "#64748b"} fill="none"></path>
+                                                            <path d="M224.6,51.9a59.5,59.5,0,0,0-43-19.9,60.5,60.5,0,0,0-44,17.6L128,59.1l-7.5-7.4C97.2,28.3,59.2,26.3,35.9,47.4a59.9,59.9,0,0,0-2.3,87l83.1,83.1a15.9,15.9,0,0,0,22.6,0l81-81C243.7,113.2,245.6,75.2,224.6,51.9Z" strokeWidth="20px" stroke={task.color || (isDarkMode ? "#94a3b8" : "#64748b")} style={{ fill: isActuallyCompleted ? (task.color || "#FF5353") : 'none' }}></path>
                                                         </svg>
                                                     </div>
                                                 </label>
                                             ) : (
-                                                <div className="shrink-0 w-4.5 h-4.5 flex items-center justify-center text-slate-500">
+                                                <div className="shrink-0 w-4.5 h-4.5 flex items-center justify-center" style={{ color: task.color || '#64748b' }}>
                                                     <span className="material-symbols-outlined text-[23px]">event</span>
                                                 </div>
                                             )}
@@ -1398,25 +1401,25 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({ toggleTheme, isDarkMode, 
                                             <div className="flex-1 min-w-0 flex flex-col justify-center">
                                                 <div className="flex items-center justify-between gap-2">
                                                     <div className="relative flex items-center gap-2 min-w-0 w-fit max-w-full">
-                                                        <p className={`text-sm font-bold truncate leading-tight ${isActuallyCompleted ? 'text-slate-500' : 'text-slate-900 dark:text-white'}`}>
+                                                        <p className={`text-sm font-bold truncate leading-tight ${isActuallyCompleted ? 'text-slate-500' : `${c.text}`}`}>
                                                             {task.title}
                                                         </p>
+                                                        {task.urgency && task.urgency !== 'Normal' && (
+                                                            <span className={`material-symbols-outlined text-[18px] filled shrink-0 ${task.urgency === 'High' ? 'text-red-500' :
+                                                                task.urgency === 'Medium' ? 'text-amber-500' : 'text-blue-500'
+                                                                } ${isActuallyCompleted ? 'opacity-50' : ''}`} title={`${task.urgency} Priority`}>flag</span>
+                                                        )}
                                                         {isActuallyCompleted && <div className="absolute left-0 right-0 top-[52%] h-[1.6px] bg-red-600/80 pointer-events-none" />}
                                                     </div>
-                                                    {task.urgency && task.urgency !== 'Normal' && (
-                                                        <span className={`material-symbols-outlined text-[18px] filled shrink-0 ${task.urgency === 'High' ? 'text-red-500' :
-                                                            task.urgency === 'Medium' ? 'text-amber-500' : 'text-blue-500'
-                                                            }`} title={`${task.urgency} Priority`}>flag</span>
-                                                    )}
                                                 </div>
 
                                                 {task.time && (
                                                     <div className="relative flex items-center gap-2 mt-1 w-fit">
-                                                        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                                        <span className={`text-[11px] font-bold flex items-center gap-1 ${isActuallyCompleted ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
                                                             <span className="material-symbols-outlined text-[14px]">schedule</span>
                                                             {task.time.slice(0, 5)}
                                                         </span>
-                                                        {isActuallyCompleted && <div className="absolute left-0 right-0 top-[50%] h-[1.2px] bg-red-600/60 pointer-events-none" />}
+                                                        {isActuallyCompleted && <div className="absolute left-0 right-0 top-[50%] h-[1.6px] bg-red-600/80 pointer-events-none" />}
                                                     </div>
                                                 )}
                                             </div>
